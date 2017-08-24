@@ -77,7 +77,7 @@ public class SQLConnection {
 			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " isPro=\'T\'" );
 			while( rs.next() ){
 				pList.add( new Proposal(
-						uName,
+						chkUserById( rs.getInt( "WriterId" )),
 						rs.getString("Title"),
 						rs.getString("Content"),
 						rs.getDate("UploadDate"),
@@ -96,7 +96,7 @@ public class SQLConnection {
 		while( rs.next() ){
 			System.out.println("Found a proposal");
 			pList.add( new Proposal(
-					rs.getString("WriterId"),
+					chkUserById( rs.getInt( "WriterId" )),
 					rs.getString("Title"),
 					rs.getString("Content"),
 					rs.getDate("UploadDate"),
@@ -138,7 +138,7 @@ public class SQLConnection {
 			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " isPro=\'F\'" );
 			while( rs.next() ){
 				pList.add( new Proposal(
-						uName,
+						chkUserById( rs.getInt( "WriterId" )),
 						rs.getString("Title"),
 						rs.getString("Content"),
 						rs.getDate("UploadDate"),
@@ -155,7 +155,7 @@ public class SQLConnection {
 		rs = st.executeQuery( "select * from Proposal where isPro=\'F\'" );
 		while( rs.next() ){
 			pList.add( new Proposal(
-					rs.getString("WriterId"),
+					chkUserById( rs.getInt("WriterId") ),
 					rs.getString("Title"),
 					rs.getString("Content"),
 					rs.getDate("UploadDate"),
