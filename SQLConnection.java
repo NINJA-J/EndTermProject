@@ -2,6 +2,7 @@ package Jonathan;
 
 import java.sql.*;
 import java.sql.Date;
+import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import Jonathan.User;
 public class SQLConnection {
 	Connection con;
 	Statement st;
+	java.sql.PreparedStatement pst;
 	ResultSet rs;
 	
 	String url = "jdbc:mysql://localhost:3306";
@@ -53,17 +55,17 @@ public class SQLConnection {
 		rs = st.executeQuery( "select * from LoginInfo where UName=\"" + uName + "\"" );
 		if( rs.next() ) 
 			return 1;
-		
+		System.out.println("Creating new user");
 		rs = st.executeQuery( "select count(*) as totalitem from LoginInfo" );
 		rs.next();
-		cnt = rs.getInt( "count(*)" );
+		cnt = rs.getInt( 1 );
 		
-		rs = st.executeQuery(
-				"insert into LoginInfo ( UserId, UName, Pswd, Email ) values ( " + 
-				( cnt + 1 ) + ", " +
-				"\"" + uName + "\", " +
-				"\"" + uPswd + "\", " +
-				"\"" + uName + "\" )" );
+		pst = con.prepareStatement( "insert into LoginInfo ( UserId, UName, Pswd, Email ) values (?,?,?,?)");
+		pst.setInt( 1,  cnt + 1 );
+		pst.setString( 2, uName );
+		pst.setString( 3, uPswd );
+		pst.setString( 4, uName );
+		pst.executeUpdate();
 		return 0;
 	}
 	
@@ -172,10 +174,13 @@ public class SQLConnection {
 	
 	public static void main( String[] args ) throws ClassNotFoundException, SQLException{
 		SQLConnection con = new SQLConnection();
-		ArrayList<Proposal> pList = con.chkProposal();
-		for( Proposal p : pList ){
-			System.out.println( p.toString() );
-		}
+//		ArrayList<Proposal> pList = con.chkProposal();
+//		for( Proposal p : pList ){
+//			System.out.println( p.toString() );
+//		}
+		int ans = con.addUserInfo( "LuJianXi",  "ThisIsAPswd" );
+		if( ans == 0 ) System.out.println("Create New User Success");
+		if( ans == 1 ) System.out.println("User Already Exists");
 		con.closeConn();
 	}
 }
