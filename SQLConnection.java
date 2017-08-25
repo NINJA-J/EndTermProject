@@ -55,7 +55,7 @@ public class SQLConnection {
 		int cnt;
 		rs = st.executeQuery( "select * from LoginInfo where UName=\"" + uName + "\"" );
 		if( rs.next() ) 
-			return 1;
+			return 1;//用户已存在
 		System.out.println("Creating new user");
 		rs = st.executeQuery( "select count(*) as totalitem from LoginInfo" );
 		rs.next();
@@ -67,8 +67,9 @@ public class SQLConnection {
 		pst.setString( 3, uPswd );
 		pst.setString( 4, uName );
 		pst.executeUpdate();
-		return 0;
+		return 0;//注册成功
 	}
+	
 	//Proposal
 	
 	///查询名称为uName的所有提案
