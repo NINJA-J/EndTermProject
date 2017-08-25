@@ -34,6 +34,8 @@ public class SQLConnection {
 		con.close();
 	}
 	//Login
+	
+	///查询用户密码是否正确，返回错误信息
 	public int chkLoginInfo( String uName, String uPswd ) throws SQLException{
 		boolean fPerson = false;
 		st = con.createStatement();  //构造语句对象
@@ -41,13 +43,14 @@ public class SQLConnection {
 		while( rs.next() ){
 			fPerson = true;
 			if( rs.getString("Pswd").equals(uPswd) )
-				return 0;
+				return 0;//正确
 		}
 		if( fPerson )
-			return 1;
-		return 2;
+			return 1;//密码错误
+		return 2;//用户名不存在
 	}
 	
+	///注册用户（立即注册）账号为uName，密码为uPswd
 	public int addLoginInfo( String uName, String uPswd ) throws SQLException{
 		int cnt;
 		rs = st.executeQuery( "select * from LoginInfo where UName=\"" + uName + "\"" );
@@ -67,6 +70,9 @@ public class SQLConnection {
 		return 0;
 	}
 	//Proposal
+	
+	///查询名称为uName的所有提案
+	
 	public ArrayList<Proposal> chkProposalByUName( String uName ) throws SQLException{
 		ArrayList<Proposal> pList = new ArrayList<Proposal>();
 		st = con.createStatement();
@@ -89,6 +95,8 @@ public class SQLConnection {
 		return pList;
 	}
 	
+	///查询所有提案
+	
 	public ArrayList<Proposal> chkProposal() throws SQLException{
 		ArrayList<Proposal> pList = new ArrayList<Proposal>();
 		st = con.createStatement();
@@ -105,6 +113,8 @@ public class SQLConnection {
 		}
 		return pList;
 	}
+	
+	///添加一个提案
 	
 	public void addProposal( String uName, Date date, Date endline, String title, String content ) throws SQLException{
 		rs = st.executeQuery( "select * from UserInfo where UName=\"" + uName + "\"" );
@@ -129,6 +139,8 @@ public class SQLConnection {
 		pst.executeUpdate();
 	}
 	
+	///查询作者为uName的规范
+	
 	public ArrayList<Proposal> chkStandardByUName( String uName ) throws SQLException{
 		ArrayList<Proposal> pList = new ArrayList<Proposal>();
 		rs = st.executeQuery( "select * from UserInfo where Name=\"" + uName + "\"" );
@@ -150,6 +162,8 @@ public class SQLConnection {
 		return pList;
 	}
 	
+	///查询所有规范
+	
 	public ArrayList<Proposal> chkStandard() throws SQLException {
 		ArrayList<Proposal> pList = new ArrayList<Proposal>();
 		rs = st.executeQuery( "select * from Proposal where isPro=\'F\'" );
@@ -164,6 +178,8 @@ public class SQLConnection {
 		}
 		return pList;
 	}
+	
+	///添加一个规范
 	
 	public void addStandard( String uName, Date date, Date endline, String title, String content ) throws SQLException{
 		rs = st.executeQuery( "select * from UserInfo where UName=\"" + uName + "\"" );
@@ -187,7 +203,11 @@ public class SQLConnection {
 		pst.setString( 10, "F" );
 		pst.executeUpdate();
 	}
+	
 	//User
+	
+	///查询所有用户
+	
 	public ArrayList<User> chkUserForAll() throws SQLException{
 		ArrayList<User> uList = new ArrayList<User>();
 		rs = st.executeQuery( "select * from UserInfo" );
@@ -205,6 +225,8 @@ public class SQLConnection {
 		return uList;
 	}
 	
+	///查询名称为name的用户
+	
 	public User chkUserByName( String name ) throws SQLException{
 		rs = st.executeQuery( "select * from UserInfo where UName=\"" + name + "\"" );
 		if( rs.next() ){
@@ -220,6 +242,8 @@ public class SQLConnection {
 		}
 		return null;
 	}
+	
+	///查询id为uId的用户
 	
 	public User chkUserById( int uId ) throws SQLException{
 		rs = st.executeQuery( "select * from UserInfo where UserId=" + uId );
