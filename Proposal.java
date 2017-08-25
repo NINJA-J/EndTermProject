@@ -2,31 +2,15 @@ package Jonathan;
 
 import java.sql.Date;
 
-public class Proposal {
-	String name;
-	String title;
-	String content;
-	Date upload;
-	Date deadline;
-	boolean isPro;
-	public Proposal( String uName, String title, String content, Date upload, Date deadline, boolean isPro ){
-		name = uName;
-		this.title = title;
-		this.content = content;
-		this.upload = upload;
-		this.deadline = deadline;
-		this.isPro = isPro;
+public class Proposal extends FileBasic{
+	public Proposal( User writer, String title, String content, Date upload, Date deadline, int agree, int disagree ){
+		super( writer, title, content, upload, deadline, agree, disagree );
 	}
-	public Proposal(){
-		
+	public String toString( String preBlock ){
+		return 	preBlock + "Proposal :\n" + super.toString( preBlock );
 	}
+	
 	public String toString(){
-		return ( isPro ? "Proposal" : "Standard" ) + " :\n" +
-				"    Title    : " + title + "\n" +
-				"    Writer   : " + name + "\n" +
-				"    Upload   : " + upload + "\n" +
-				"    Deadline : " + deadline + "\n" +
-				"    Content  :\n" +
-				"        " + content + "\n";
+		return toString("");
 	}
 }
