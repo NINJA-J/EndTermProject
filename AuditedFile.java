@@ -3,6 +3,12 @@ package Jonathan;
 import java.util.Calendar;
 
 public class AuditedFile extends FileBasic {
+	
+	public static final int STATUS_NONE 		= 0;
+	public static final int STATUS_RECOMMENDED 	= 1;
+	public static final int STATUS_RECORDED		= 2;
+	public static final int STATUS_DECIDED		= 3;
+	
 	User writer;
 	int agree;
 	int disagree;
@@ -30,6 +36,7 @@ public class AuditedFile extends FileBasic {
 				preBlock + "    Content  :<br>\n" +
 				preBlock + "        " + content + "<br>\n";
 	}
+	
 	public String toString(){
 		return this.toString( "" );
 	}
