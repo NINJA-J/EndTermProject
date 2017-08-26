@@ -29,14 +29,14 @@ public class SQLConnection {
 	public static final int SUCCESS 			= 0;
 	public static final int DB_OPER_FAILURE 	= 1;
 	public static final int TITLE_EXIST 		= 2;
-	public static final int TITLE_NO_FOUND		= 3;
+	public static final int TITLE_INEXIST		= 3;
 	public static final int USER_EXIST 			= 4;
-	public static final int USER_NO_FOUND		= 5;
+	public static final int USER_INEXIST		= 5;
 	public static final int REFERRER_EXIST		= 6;
-	public static final int REFERRER_NO_FOUND	= 7;
+	public static final int REFERRER_INEXIST	= 7;
 	public static final int DATE_FORMAT_ERROR 	= 8;
 //	public static final int FAILURE 			= 9;
-	public static final int USER_ERROR 			= 10;
+//	public static final int USER_ERROR 			= 10;
 	public static final int PSWD_ERROR 			= 11;
 	
 	SQLConnection con2 = null;
@@ -84,9 +84,9 @@ public class SQLConnection {
 	
 	//Login
 	//查询用户名密码存在存在，返回值：
-	//SQLConnection.SUCCESS		存在且正确
-	//SQLConnection.PSWD_ERROR	密码错误
-	//SQLConnection.USER_ERROR	用户名不存在
+	//SQLConnection.SUCCESS			存在且正确
+	//SQLConnection.PSWD_ERROR		密码错误
+	//SQLConnection.USER_INEXIST	用户名不存在
 	public int chkLoginInfo( String uName, String uPswd ) throws SQLException{
 		boolean fPerson = false;
 		st = con.createStatement();  //构造语句对象
@@ -98,7 +98,7 @@ public class SQLConnection {
 		}
 		if( fPerson )
 			return SQLConnection.PSWD_ERROR;
-		return SQLConnection.USER_ERROR;
+		return SQLConnection.USER_INEXIST;
 	}
 	
 	//立即注册用户名密码，返回值：
@@ -243,7 +243,7 @@ public class SQLConnection {
 		
 		rs = st.executeQuery( "select * from UserInfo where Name=\"" + uName + "\"" );
 		if( !rs.next() ) 
-			return SQLConnection.USER_NO_FOUND;
+			return SQLConnection.USER_INEXIST;
 		int uId = rs.getInt( "UserId" );
 		
 		rs = st.executeQuery( "select count(*) as totalitem from Proposal" );
@@ -384,7 +384,7 @@ public class SQLConnection {
 		
 		rs = st.executeQuery( "select * from UserInfo where Name=\"" + uName + "\"" );
 		if( !rs.next() ) 
-			return SQLConnection.USER_NO_FOUND;
+			return SQLConnection.USER_INEXIST;
 		int uId = rs.getInt( "UserId" );
 		
 		rs = st.executeQuery( "select count(*) as totalitem from Proposal" );
@@ -520,7 +520,7 @@ public class SQLConnection {
 		if( referrer != "" ){
 			refer = chkUserByName( referrer );
 			if( refer == null )
-				return SQLConnection.REFERRER_NO_FOUND;
+				return SQLConnection.REFERRER_INEXIST;
 		}
 		
 		int cnt;
