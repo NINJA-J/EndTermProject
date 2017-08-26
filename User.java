@@ -1,25 +1,37 @@
 package Jonathan;
 
 import java.sql.Date;
+import java.util.Calendar;
 
 public class User {
+	
+	public static char FEATURE_NORMAL = 'N';
+	public static char FEATURE_MEMBER = 'M';
+	public static char FEATURE_INDUSTRY_MANAGER = 'I';
+	public static char FEATURE_COMMITTEE_MANAGER = 'C';
+	public static char FEATURE_FINAL_MANAGER = 'F';
+	public static char FEATURE_BOSS = 'B';
+	
 	String name;
 	char gender;
-	Date birthDate;
+	Calendar birthDate;
 	String address;
 	String tel;
-	User referrer;
+	int referrerId;
 	int industryId;
 	int committeeId;
-	public User( String name, char gender, Date bDate, String address, String tel, User referrer, int iName, int cName ){
+	char feature;
+	
+	public User( String name, char gender, Calendar bDate, String address, String tel, int rId, int iId, int cId, char feature ){
 		this.name = name;
 		this.gender = gender;
 		this.birthDate = bDate;
 		this.address = address;
 		this.tel = tel;
-		this.referrer = referrer;
-		this.industryId = iName;
-		this.committeeId = cName;
+		this.referrerId = rId;
+		this.industryId = iId;
+		this.committeeId = cId;
+		this.feature = feature;
 	}
 	
 	public String getName(){ return name; }
@@ -28,17 +40,32 @@ public class User {
 	
 	public boolean isFemale(){ return gender == 'F'; }
 	
-	public Date getBirthDate(){ return birthDate; }
+	public Calendar getBirthDate(){ return birthDate; }
 	
 	public String getAddress(){ return address; }
 	
 	public String getTel(){ return tel; }
 	
-	public User getReferrer(){ return referrer; }
+	public int getReferrer(){ return referrerId; }
 	
 	public int getIndustry(){ return industryId; }
 	
 	public int getCommitteeId(){ return committeeId; }
+	
+	//判断身份
+	public boolean isFeatureNormal(){ return feature == User.FEATURE_NORMAL; }
+	
+	public boolean isFeatureMember(){ return feature == User.FEATURE_MEMBER; }
+	
+	public boolean isFeatureIndustryM(){ return feature == User.FEATURE_INDUSTRY_MANAGER; }
+	
+	public boolean isFeatureCommitteeM(){ return feature == User.FEATURE_COMMITTEE_MANAGER; }
+	
+	public boolean isFeatureFinalM(){ return feature == User.FEATURE_FINAL_MANAGER; }
+	
+	public boolean isFeatureBoss(){ return feature == User.FEATURE_BOSS; }
+	
+	public int getFeature(){ return feature; }
 	
 	public String toString( String preBlock ){
 		return  preBlock + name + " : \n"+
@@ -46,10 +73,11 @@ public class User {
 				preBlock + "    BirthDate : " + birthDate + "\n" +
 				preBlock + "    Address   : " + address + "\n" +
 				preBlock + "    Tel       : " + tel + "\n" +
-				preBlock + "    Referrer  : " + referrer.getName() + "\n" +
+				preBlock + "    Referrer  : " + referrerId + "\n" +
 				preBlock + "    Industry  : " + industryId + "\n" +
 				preBlock + "    Committee : " + committeeId + "\n";
 	}
+	
 	public String toString(){
 		return this.toString("");
 	}

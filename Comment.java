@@ -8,7 +8,7 @@ public class Comment {
 	Date upload;
 	String content;
 	
-	public Comment( int fildId, User writer, Date upload, String content ) {
+	public Comment( int fileId, User writer, Date upload, String content ) {
 		this.fileId = fileId;
 		this.writer = writer;
 		this.upload = upload;

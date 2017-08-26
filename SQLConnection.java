@@ -1,7 +1,16 @@
 package Jonathan;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+//import java.sql.*;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Scanner;
+
 import Jonathan.User;
 
 //String url = "jdbc:mysql://localhost:3306";
@@ -17,15 +26,27 @@ public class SQLConnection {
 	
 	public static int SUCCESS 		= 0;
 	public static int FAILURE 		= 1;
-	public static int DATA_EXIST 	= 2;
-	public static int USER_ERROR 	= 3;
-	public static int PSWD_ERROR 	= 4;
+	public static int TITLE_EXIST 	= 2;
+	public static int USER_NO_FOUND	= 3;
+//	public static int 
+	public static int USER_ERROR 	= 10;
+	public static int PSWD_ERROR 	= 11;
+	
+	SQLConnection con2 = null;
 	
 	//Connection
 	//初始化
 	public SQLConnection() throws ClassNotFoundException, SQLException{
 		super();
 		Class.forName("com.mysql.jdbc.Driver");
+		con2 = new SQLConnection( false );
+	}
+	
+	public SQLConnection( boolean createCopy ) throws ClassNotFoundException, SQLException{
+		super();
+		Class.forName("com.mysql.jdbc.Driver");
+		if( createCopy )
+			con2 = new SQLConnection( false );
 	}
 	
 	//连接数据库，返回值：
@@ -33,13 +54,14 @@ public class SQLConnection {
 	//false - 失败
 	public boolean connectToDatabase( String url, String baseName, String user, String pswd ) throws SQLException{
 		con = DriverManager.getConnection( 
-				url + "/" + baseName,
+				"jdbc:mysql://" + url + "/" + baseName,
 				user,
 				pswd );
 		if( con.isClosed() )
 			return false;
 		st = con.createStatement();
-		return true;
+	
+		return ( con2 == null ? true : con2.connectToDatabase(url, baseName, user, pswd ) );
 	}
 	
 	//关闭当前连接
@@ -94,6 +116,18 @@ public class SQLConnection {
 		return 0;
 	}
 	
+	//创建java.sql.Date，表示当天时间
+	public Calendar createCalendarForNow(){
+		return Calendar.getInstance();
+	}
+	
+	//创建设立的时间
+	public Calendar createCalendar( int year, int month, int day ){
+		Calendar c = Calendar.getInstance();
+		c.set(year, month, day);
+		return c;
+	}
+	
 	//Proposal Operation
 	//查询所有uName用户填写的提案
 	public ArrayList<Proposal> getProposalByUName( String uName ) throws SQLException{
@@ -105,12 +139,14 @@ public class SQLConnection {
 			int uId = rs.getInt( "UserId" );
 			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " isPro=\'T\'" );
 			while( rs.next() ){
+				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 				pList.add( new Proposal(
-						chkUserById( rs.getInt( "WriterId" )),
+						chkUserById( rs.getInt( "WriterId" ) ),
 						rs.getString( "Title" ),
 						rs.getString( "Content" ),
-						rs.getDate( "UploadDate" ),
-						rs.getDate( "Deadline" ),
+						upload,
+						deadline,
 						rs.getInt( "Agree" ), 
 						rs.getInt( "Disagree" ) ) );
 			}
@@ -124,12 +160,14 @@ public class SQLConnection {
 		rs = st.executeQuery( "select * from Proposal where FileId=" + pId + " isPro=\'T\'" );
 		
 		if( rs.next() ){
+			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 			return new Proposal(
 					chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
-					rs.getDate( "UploadDate" ),
-					rs.getDate( "Deadline" ),
+					upload,
+					deadline,
 					rs.getInt( "Agree" ),
 					rs.getInt( "Disagree" ) );
 		}
@@ -143,12 +181,15 @@ public class SQLConnection {
 		rs = st.executeQuery( "select * from Proposal where Title=" + title + " isPro=\'T\'" );
 		
 		while( rs.next() ){
+			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
+			
 			pList.add( new Proposal(
 					chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
-					rs.getDate( "UploadDate" ),
-					rs.getDate( "Deadline" ),
+					upload,
+					deadline,
 					rs.getInt( "Agree" ),
 					rs.getInt( "Disagree" ) ) );
 		}
@@ -162,13 +203,15 @@ public class SQLConnection {
 		st = con.createStatement();
 		rs = st.executeQuery( "select * from Proposal where isPro=\'T\'" );
 		while( rs.next() ){
-			System.out.println("Found a proposal");
+			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
+			
 			pList.add( new Proposal(
-					chkUserById( rs.getInt( "WriterId" )),
+					con2.chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title"),
 					rs.getString( "Content"),
-					rs.getDate( "UploadDate"),
-					rs.getDate( "Deadline"),
+					upload,
+					deadline,
 					rs.getInt( "Agree"),
 					rs.getInt( "Disagree") ) );
 		}
@@ -176,10 +219,16 @@ public class SQLConnection {
 	}
 	
 	//新建一份提案
-	public void addProposal( String uName, Date date, Date endline, String title, String content ) throws SQLException{
-		rs = st.executeQuery( "select * from UserInfo where UName=\"" + uName + "\"" );
-		if( !rs.next() ) return;
+	public int addProposal( String uName, Calendar date, Calendar endline, String title, String content ) throws SQLException{
+		rs = st.executeQuery( "select * from Proposal where Title=\"" + title + "\" and isPro=\'T\'" );
+		if( rs.next() )
+			return SQLConnection.TITLE_EXIST;
+		
+		rs = st.executeQuery( "select * from UserInfo where Name=\"" + uName + "\"" );
+		if( !rs.next() ) 
+			return SQLConnection.USER_NO_FOUND;
 		int uId = rs.getInt( "UserId" );
+		
 		rs = st.executeQuery( "select count(*) as totalitem from Proposal" );
 		rs.next();
 		int cnt = rs.getInt(1);
@@ -189,14 +238,15 @@ public class SQLConnection {
 		pst.setInt( 1, cnt + 1 );
 		pst.setString( 2, title );
 		pst.setInt( 3, uId );
-		pst.setDate( 4, date );
-		pst.setDate( 5, endline );
+		pst.setDate( 4, new java.sql.Date( date.getTime().getTime() ) );
+		pst.setDate( 5, new java.sql.Date( endline.getTime().getTime() ) );
 		pst.setString( 6, content );
 		pst.setString( 7, "W");
 		pst.setInt( 8, 0 );
 		pst.setInt( 9, 0 );
 		pst.setString( 10, "T" );
 		pst.executeUpdate();
+		return SQLConnection.SUCCESS;
 	}
 	
 	//按照ID为提案增加评论
@@ -204,7 +254,7 @@ public class SQLConnection {
 		pst = con.prepareStatement( "insert into Comments ( FileId, WriterId, TimeStamp, Content ) values ( ?,?,?,? )" );
 		pst.setInt( 1, proposalId );
 		pst.setInt( 2, writerId );
-		pst.setDate( 3, Date.valueOf( java.time.LocalDate.now() ) );
+		pst.setDate( 3, new java.sql.Date( Calendar.getInstance().getTime().getTime() ) );
 		pst.setString( 4, comment );
 		pst.executeUpdate();
 	}
@@ -217,7 +267,7 @@ public class SQLConnection {
 		while( rs.next() ){
 			cList.add( new Comment(
 					proposalId,
-					chkUserById( rs.getInt("WriterId") ),
+					con2.chkUserById( rs.getInt("WriterId") ),
 					rs.getDate("Upload"),
 					rs.getString("Content") ) );
 		}
@@ -233,12 +283,15 @@ public class SQLConnection {
 			int uId = rs.getInt( "UserId" );
 			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " isPro=\'F\'" );
 			while( rs.next() ){
+				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
+				
 				pList.add( new Standard(
-						chkUserById( rs.getInt( "WriterId" ) ),
+						con2.chkUserById( rs.getInt( "WriterId" ) ),
 						rs.getString( "Title" ),
 						rs.getString( "Content" ),
-						rs.getDate( "UploadDate" ),
-						rs.getDate( "Deadline" ),
+						upload,
+						deadline,
 						rs.getInt( "Agree" ),
 						rs.getInt( "Disagree" ) ) );
 			}
@@ -251,12 +304,15 @@ public class SQLConnection {
 		rs = st.executeQuery( "select * from Proposal where FileId=" + sId + " isPro=\'F\'" );
 		
 		if( rs.next() ){
+			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
+			
 			return new Standard(
-					chkUserById( rs.getInt( "WriterId" ) ),
+					con2.chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
-					rs.getDate( "UploadDate" ),
-					rs.getDate( "Deadline" ),
+					upload,
+					deadline,
 					rs.getInt( "Agree" ),
 					rs.getInt( "Disagree" ) );
 		}
@@ -269,12 +325,15 @@ public class SQLConnection {
 		rs = st.executeQuery( "select * from Proposal where Title=" + title + " isPro=\'F\'" );
 		
 		while( rs.next() ){
+			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
+			
 			pList.add( new Standard(
 					chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
-					rs.getDate( "UploadDate" ),
-					rs.getDate( "Deadline" ),
+					upload,
+					deadline,
 					rs.getInt( "Agree" ),
 					rs.getInt( "Disagree" ) ) );
 		}
@@ -286,22 +345,31 @@ public class SQLConnection {
 		ArrayList<Standard> pList = new ArrayList<Standard>();
 		rs = st.executeQuery( "select * from Proposal where isPro=\'F\'" );
 		while( rs.next() ){
+			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
+			
 			pList.add( new Standard(
-					chkUserById( rs.getInt( "WriterId") ),
+					con2.chkUserById( rs.getInt( "WriterId") ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
-					rs.getDate( "UploadDate" ),
-					rs.getDate( "Deadline" ),
+					upload,
+					deadline,
 					rs.getInt( "Agree" ),
 					rs.getInt( "Disagree" ) ) );
 		}
 		return pList;
 	}
 	
-	public void addStandard( String uName, Date date, Date endline, String title, String content ) throws SQLException{
-		rs = st.executeQuery( "select * from UserInfo where UName=\"" + uName + "\"" );
-		if( !rs.next() ) return;
+	public int addStandard( String uName, Calendar date, Calendar endline, String title, String content ) throws SQLException{
+		rs = st.executeQuery( "select * from Proposal where Title=\"" + title + "\" and isPro=\'F\'" );
+		if( rs.next() )
+			return SQLConnection.TITLE_EXIST;
+		
+		rs = st.executeQuery( "select * from UserInfo where Name=\"" + uName + "\"" );
+		if( !rs.next() ) 
+			return SQLConnection.USER_NO_FOUND;
 		int uId = rs.getInt( "UserId" );
+		
 		rs = st.executeQuery( "select count(*) as totalitem from Proposal" );
 		rs.next();
 		int cnt = rs.getInt(1);
@@ -311,21 +379,22 @@ public class SQLConnection {
 		pst.setInt( 1, cnt + 1 );
 		pst.setString( 2, title );
 		pst.setInt( 3, uId );
-		pst.setDate( 4, date );
-		pst.setDate( 5, endline );
+		pst.setDate( 4, new java.sql.Date( date.getTime().getTime() ) );
+		pst.setDate( 5, new java.sql.Date( endline.getTime().getTime() ) );
 		pst.setString( 6, content );
 		pst.setString( 7, "W");
 		pst.setInt( 8, 0 );
 		pst.setInt( 9, 0 );
 		pst.setString( 10, "F" );
 		pst.executeUpdate();
+		return SQLConnection.SUCCESS;
 	}
 	
 	public void addCommentForStandard( int standardId, String comment, int writerId ) throws SQLException{
 		pst = con.prepareStatement( "insert into Comments ( FileId, WriterId, TimeStamp, Content ) values ( ?,?,?,? )" );
 		pst.setInt( 1, standardId );
 		pst.setInt( 2, writerId );
-		pst.setDate( 3, Date.valueOf( java.time.LocalDate.now() ) );
+		pst.setDate( 3, new java.sql.Date( createCalendarForNow().getTime().getTime() )  );
 		pst.setString( 4, comment );
 		pst.executeUpdate();
 	}
@@ -337,7 +406,7 @@ public class SQLConnection {
 		while( rs.next() ){
 			cList.add( new Comment(
 					standardId,
-					chkUserById( rs.getInt("WriterId") ),
+					con2.chkUserById( rs.getInt("WriterId") ),
 					rs.getDate("Upload"),
 					rs.getString("Content") ) );
 		}
@@ -367,7 +436,7 @@ public class SQLConnection {
 		rs = st.executeQuery( "select StandardId from StdsForPro where ProposalId=" + pId );
 		
 		while( rs.next() ){
-			sList.add( getStandardById( rs.getInt( "StandardId" ) ) );
+			sList.add( con2.getStandardById( rs.getInt( "StandardId" ) ) );
 		}
 		
 		return sList;
@@ -377,65 +446,111 @@ public class SQLConnection {
 	//查询所有用户个人信息
 	public ArrayList<User> chkUserForAll() throws SQLException{
 		ArrayList<User> uList = new ArrayList<User>();
-		rs = st.executeQuery( "select * from UserInfo" );
+		ResultSet rs = st.executeQuery( "select * from UserInfo" );
 		while( rs.next() ){
-			uList.add( new User(
-					rs.getString("UName"),
-					rs.getString("Gender").charAt(0),
-					rs.getDate("BirthDate"),
-					rs.getString("Address"),
-					rs.getString("Tel"),
-					chkUserById( rs.getInt("ReferrerId") ),
-					rs.getInt("IndustryId"),
-					rs.getInt("CommitteeId") ) );
+			Calendar cBirthDay = Calendar.getInstance();
+			cBirthDay.setTime( new java.util.Date( rs.getDate( "Birth" ).getTime() ) );
+			uList.add ( new User(
+					rs.getString( "Name" ),
+					rs.getString( "Gender" ).charAt(0),
+					cBirthDay,
+					rs.getString( "Address" ),
+					rs.getString( "Tel" ),
+					rs.getInt( "ReferrerId" ),
+					rs.getInt( "IndustryId" ),
+					rs.getInt( "CommitteeId" ),
+					rs.getString( "Feature" ).charAt(0) ) );
 		}
+		rs.close();
 		return uList;
 	}
 	
 	//查询名称为name的用户的个人信息
 	public User chkUserByName( String name ) throws SQLException{
-		rs = st.executeQuery( "select * from UserInfo where UName=\"" + name + "\"" );
+		rs = st.executeQuery( "select * from UserInfo where Name=\"" + name + "\"" );
 		if( rs.next() ){
+			Calendar cBirthDay = Calendar.getInstance();
+			cBirthDay.setTime( new java.util.Date( rs.getDate( "Birth" ).getTime() ) );
 			return new User(
-					rs.getString("UName"),
-					rs.getString("Gender").charAt(0),
-					rs.getDate("BirthDate"),
-					rs.getString("Address"),
-					rs.getString("Tel"),
-					chkUserById( rs.getInt("ReferrerId") ),
-					rs.getInt("IndustryId"),
-					rs.getInt("CommitteeId") );
+					rs.getString( "Name" ),
+					rs.getString( "Gender" ).charAt(0),
+					cBirthDay,
+					rs.getString( "Address" ),
+					rs.getString( "Tel" ),
+					rs.getInt( "ReferrerId" ),
+					rs.getInt( "IndustryId" ),
+					rs.getInt( "CommitteeId" ),
+					rs.getString( "Feature" ).charAt(0));
 		}
 		return null;
 	}
 	
 	//查询ID为uId的用户的个人信息
 	public User chkUserById( int uId ) throws SQLException{
-		rs = st.executeQuery( "select * from UserInfo where UserId=" + uId );
+		ResultSet rs = st.executeQuery( "select * from UserInfo where UserId=" + uId );
 		if( rs.next() ){
+			Calendar cBirthDay = Calendar.getInstance();
+			cBirthDay.setTime( new java.util.Date( rs.getDate( "Birth" ).getTime() ) );
 			return new User(
-					rs.getString("UName"),
-					rs.getString("Gender").charAt(0),
-					rs.getDate("BirthDate"),
-					rs.getString("Address"),
-					rs.getString("Tel"),
-					chkUserById( rs.getInt("ReferrerId") ),
-					rs.getInt("IndustryId"),
-					rs.getInt("CommitteeId") );
+					rs.getString( "Name" ),
+					rs.getString( "Gender" ).charAt(0),
+					cBirthDay,
+					rs.getString( "Address" ),
+					rs.getString( "Tel" ),
+					rs.getInt( "ReferrerId" ),
+					rs.getInt( "IndustryId" ),
+					rs.getInt( "CommitteeId" ),
+					rs.getString( "Feature" ).charAt(0));
 		}
+		rs.close();
 		return null;
 	}
 	
 	//主函数（用不到）
 	public static void main( String[] args ) throws ClassNotFoundException, SQLException{
-		SQLConnection con = new SQLConnection();
-//		ArrayList<Proposal> pList = con.chkProposal();
-//		for( Proposal p : pList ){
-//			System.out.println( p.toString() );
+		Scanner sin = new Scanner( System.in );
+		
+		SQLConnection con = new SQLConnection( true );
+		if( !con.connectToDatabase( 
+				"localhost:3306", 
+				"DocManager", 
+				"root", 
+				"" ) ){
+			System.out.println("Fail Connecting To Database !!!");
+			return;
+		}
+		
+//		System.out.print("Username : ");
+//		String user = sin.next();
+//		System.out.print("Password : ");
+//		String pswd = sin.next();
+//		if( con.chkLoginInfo( user, pswd) != 0 ){
+//			System.out.println("Fail To Login");
+//			return;
 //		}
-		int ans = con.addLoginInfo( "LuJianXi",  "ThisIsAPswd" );
-		if( ans == 0 ) System.out.println("Create New User Success");
-		if( ans == 1 ) System.out.println("User Already Exists");
-		con.closeConn();
+//		System.out.println( "You Have Successfully Logged In, " + user );
+		
+		System.out.println( con.chkUserForAll() );
+		System.out.println("---------------------------------");
+		System.out.println( con.chkUserById( 0 ) );
+		System.out.println("---------------------------------");
+		System.out.println( con.chkUserByName( "Jonathan" ) );
+		System.out.println("---------------------------------");
+		System.out.println( con.chkUserById( con.chkUserByName( "LuJianXi" ).getReferrer() ) );
+		
+		con.addStandard( 
+				"Jonathan", 
+				( new SQLConnection() ).createCalendarForNow(), 
+				( new SQLConnection() ).createCalendar( 2020, 12, 20), 
+				"Do I Look Like A Title?",
+				"There Is No Content" );
+		con.addStandard( 
+				"Jonathan", 
+				( new SQLConnection() ).createCalendarForNow(), 
+				( new SQLConnection() ).createCalendar( 2047, 8, 22), 
+				"It's an Important Day",
+				"Remind yourself whose birthday it is" );
+		
+		System.out.println( con.getStandardForAll() );
 	}
 }

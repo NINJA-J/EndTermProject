@@ -1,9 +1,9 @@
 package Jonathan;
 
-import java.sql.Date;
+import java.util.Calendar;
 
 public class Proposal extends FileBasic{
-	public Proposal( User writer, String title, String content, Date upload, Date deadline, int agree, int disagree ){
+	public Proposal( User writer, String title, String content, Calendar upload, Calendar deadline, int agree, int disagree ){
 		super( writer, title, content, upload, deadline, agree, disagree );
 	}
 	public String toString( String preBlock ){

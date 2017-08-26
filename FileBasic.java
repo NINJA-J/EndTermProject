@@ -1,17 +1,17 @@
 package Jonathan;
 
-import java.sql.Date;
+import java.util.Calendar;
 import Jonathan.User;
 
 public class FileBasic {
 	User writer;
 	String title;
 	String content;
-	Date upload;
-	Date deadline;
+	Calendar upload;
+	Calendar deadline;
 	int agree;
 	int disagree;
-	public FileBasic( User writer, String title, String content, Date upload, Date deadline, int agree, int disagree ){
+	public FileBasic( User writer, String title, String content, Calendar upload, Calendar deadline, int agree, int disagree ){
 		this.writer = writer;
 		this.title = title;
 		this.content = content;
@@ -30,23 +30,23 @@ public class FileBasic {
 	
 	public String getContent(){ return content; }
 	
-	public Date getUploadDate(){ return upload; }
+	public Calendar getUploadDate(){ return upload; }
 	
-	public Date getDeadline(){ return deadline; }
+	public Calendar getDeadline(){ return deadline; }
 	
 	public int getAgreeAmnt(){ return agree; }
 	
 	public int getDisagreeAmnt(){ return disagree; }
 	
 	public String toString( String preBlock ){
-		return  preBlock + "    Title    : " + title + "\n" +
-				preBlock + "    Writer   : " + writer.toString( "    " ) + "\n" +
-				preBlock + "    Upload   : " + upload + "\n" +
-				preBlock + "    Deadline : " + deadline + "\n" +
-				preBlock + "    Agree    : " + agree +
-				preBlock + "    Disagree : " + disagree +
-				preBlock + "    Content  :\n" +
-				preBlock + "        " + content + "\n";
+		return  preBlock + "    Title    : " + title + "<br>\n" +
+				preBlock + "    Writer   : " + writer.getName() + "<br>\n" +
+				preBlock + "    Upload   : " + upload.getTime() + "<br>\n" +
+				preBlock + "    Deadline : " + deadline.getTime() + "<br>\n" +
+				preBlock + "    Agree    : " + agree + "<br>\n" +
+				preBlock + "    Disagree : " + disagree + "<br>\n" +
+				preBlock + "    Content  :<br>\n" +
+				preBlock + "        " + content + "<br>\n";
 	}
 	public String toString(){
 		return this.toString( "" );
