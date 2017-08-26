@@ -84,9 +84,9 @@ public class SQLConnection {
 	
 	//Login
 	//查询用户名密码存在存在，返回值：
-	//0 - 存在且正确
-	//1 - 密码错误
-	//2 - 用户名不存在
+	//SQLConnection.SUCCESS		存在且正确
+	//SQLConnection.PSWD_ERROR	密码错误
+	//SQLConnection.USER_ERROR	用户名不存在
 	public int chkLoginInfo( String uName, String uPswd ) throws SQLException{
 		boolean fPerson = false;
 		st = con.createStatement();  //构造语句对象
@@ -102,13 +102,13 @@ public class SQLConnection {
 	}
 	
 	//立即注册用户名密码，返回值：
-	//0 - 注册成功
-	//1 - 用户名已存在
+	//SQLConnection.USER_EXIST		注册成功
+	//SQLConnection.SUCCESS			用户名已存在
 	public int addLoginInfo( String uName, String uPswd ) throws SQLException{
 		int cnt;
 		rs = st.executeQuery( "select * from LoginInfo where UName=\"" + uName + "\"" );
 		if( rs.next() ) 
-			return 1;
+			return SQLConnection.USER_EXIST;
 		System.out.println("Creating new user");
 		rs = st.executeQuery( "select count(*) as totalitem from LoginInfo" );
 		rs.next();
@@ -120,7 +120,7 @@ public class SQLConnection {
 		pst.setString( 3, uPswd );
 		pst.setString( 4, uName );
 		pst.executeUpdate();
-		return 0;
+		return SQLConnection.SUCCESS;
 	}
 	
 	//创建java.sql.Date，表示当天时间
@@ -231,7 +231,11 @@ public class SQLConnection {
 		return pList;
 	}
 	
-	//新建一份提案
+	/* 新建一份提案，返回值
+	 * SQLConnection.TITLE_EXIST	该标题已存在
+	 * SQLConnection.USER_NO_FOUND	写者不存在
+	 * SQLConnection.SUCCESS		成功
+	 * */
 	public int addProposal( String uName, Calendar date, Calendar endline, String title, String content ) throws SQLException{
 		rs = st.executeQuery( "select * from Proposal where Title=\"" + title + "\" and isPro=\'T\'" );
 		if( rs.next() )
