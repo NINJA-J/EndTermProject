@@ -12,6 +12,7 @@ public class User {
 	public static char FEATURE_FINAL_MANAGER = 'F';
 	public static char FEATURE_BOSS = 'B';
 	
+	int userId;
 	String name;
 	char gender;
 	Calendar birthDate;
@@ -22,7 +23,8 @@ public class User {
 	int committeeId;
 	char feature;
 	
-	public User( String name, char gender, Calendar bDate, String address, String tel, int rId, int iId, int cId, char feature ){
+	public User( int uId, String name, char gender, Calendar bDate, String address, String tel, int rId, int iId, int cId, char feature ){
+		this.userId = uId;
 		this.name = name;
 		this.gender = gender;
 		this.birthDate = bDate;
@@ -33,6 +35,8 @@ public class User {
 		this.committeeId = cId;
 		this.feature = feature;
 	}
+	
+	public int getId(){ return userId; }
 	
 	public String getName(){ return name; }
 	

@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 //import java.sql.*;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -24,13 +26,18 @@ public class SQLConnection {
 	java.sql.PreparedStatement pst;
 	ResultSet rs;
 	
-	public static int SUCCESS 		= 0;
-	public static int FAILURE 		= 1;
-	public static int TITLE_EXIST 	= 2;
-	public static int USER_NO_FOUND	= 3;
-//	public static int 
-	public static int USER_ERROR 	= 10;
-	public static int PSWD_ERROR 	= 11;
+	public static final int SUCCESS 			= 0;
+	public static final int DB_OPER_FAILURE 	= 1;
+	public static final int TITLE_EXIST 		= 2;
+	public static final int TITLE_NO_FOUND		= 3;
+	public static final int USER_EXIST 			= 4;
+	public static final int USER_NO_FOUND		= 5;
+	public static final int REFERRER_EXIST		= 6;
+	public static final int REFERRER_NO_FOUND	= 7;
+	public static final int DATE_FORMAT_ERROR 	= 8;
+//	public static final int FAILURE 			= 9;
+	public static final int USER_ERROR 			= 10;
+	public static final int PSWD_ERROR 			= 11;
 	
 	SQLConnection con2 = null;
 	
@@ -87,11 +94,11 @@ public class SQLConnection {
 		while( rs.next() ){
 			fPerson = true;
 			if( rs.getString("Pswd").equals(uPswd) )
-				return 0;
+				return SQLConnection.SUCCESS;
 		}
 		if( fPerson )
-			return 1;
-		return 2;
+			return SQLConnection.PSWD_ERROR;
+		return SQLConnection.USER_ERROR;
 	}
 	
 	//立即注册用户名密码，返回值：
@@ -128,6 +135,12 @@ public class SQLConnection {
 		return c;
 	}
 	
+	public Calendar createCalendarByString( String date ) throws ParseException{
+		SimpleDateFormat sdf= new SimpleDateFormat("yyyy/MM/dd");
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime( sdf.parse(date) );
+		return calendar;
+	}
 	//Proposal Operation
 	//查询所有uName用户填写的提案
 	public ArrayList<Proposal> getProposalByUName( String uName ) throws SQLException{
@@ -451,6 +464,7 @@ public class SQLConnection {
 			Calendar cBirthDay = Calendar.getInstance();
 			cBirthDay.setTime( new java.util.Date( rs.getDate( "Birth" ).getTime() ) );
 			uList.add ( new User(
+					rs.getInt( "UserId" ),
 					rs.getString( "Name" ),
 					rs.getString( "Gender" ).charAt(0),
 					cBirthDay,
@@ -472,6 +486,7 @@ public class SQLConnection {
 			Calendar cBirthDay = Calendar.getInstance();
 			cBirthDay.setTime( new java.util.Date( rs.getDate( "Birth" ).getTime() ) );
 			return new User(
+					rs.getInt( "UserId" ),
 					rs.getString( "Name" ),
 					rs.getString( "Gender" ).charAt(0),
 					cBirthDay,
@@ -485,13 +500,71 @@ public class SQLConnection {
 		return null;
 	}
 	
+	/* 添加一个用户的个人信息，返回值
+	 * SQLConnection.USER_EXIST			同名（实名）用户已存在
+	 * SQLConnection.REFERRER_NO_FOUND	推荐人不存在
+	 * SQLConnection.DB_OPER_FAILURE	日期格式错误
+	 * SQLConnection.DB_OPER_FAILURE	数据库操作失败
+	 * SQLConnection.SUCCESS			成功
+	 * */
+	public int addUser( String name, String gender, String bDate, String address, String tel, String referrer, String industry, String committee, char feature ) throws SQLException{
+		User user = chkUserByName( name );
+		User refer = null;
+		if( user != null )
+			return SQLConnection.USER_EXIST;
+		
+		if( referrer != "" ){
+			refer = chkUserByName( referrer );
+			if( refer == null )
+				return SQLConnection.REFERRER_NO_FOUND;
+		}
+		
+		int cnt;
+		
+		try {
+			rs = st.executeQuery( "select count(*) as totalitem from UserInfo" );
+			rs.next();
+			cnt = rs.getInt( 1 ) + 1;
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			return SQLConnection.DB_OPER_FAILURE;
+		}
+		
+		Calendar birth = null;
+		try {
+			birth = createCalendarByString(bDate);
+		} catch (ParseException e) {
+			return SQLConnection.DATE_FORMAT_ERROR;
+		}
+		
+		pst = con.prepareStatement( "insert into UserInfo " + 
+						"( UserId, Name, Gender, Birth, Address, Tel, ReferrerId, CommitteeId, Feature ) " + 
+						"values ( ?,?,?,?,?,?,?,?,?)" );
+		pst.setInt( 1,  cnt );
+		pst.setString( 2, name );
+		pst.setString( 3, gender );
+		pst.setDate( 4, new java.sql.Date( birth.getTime().getTime() ) );
+		pst.setString( 5,  address );
+		pst.setString( 6, tel );
+		pst.setInt( 7, ( refer == null ? -1 : refer.getId() ) );
+		pst.setInt( 8, -1 );
+		pst.setInt( 9, -1 );
+		pst.setString(10, String.valueOf( feature ));
+		pst.executeUpdate();
+		
+		
+		return SQLConnection.SUCCESS;
+	}
+	
 	//查询ID为uId的用户的个人信息
 	public User chkUserById( int uId ) throws SQLException{
-		ResultSet rs = st.executeQuery( "select * from UserInfo where UserId=" + uId );
+		rs = st.executeQuery( "select * from UserInfo where UserId=" + uId );
 		if( rs.next() ){
 			Calendar cBirthDay = Calendar.getInstance();
 			cBirthDay.setTime( new java.util.Date( rs.getDate( "Birth" ).getTime() ) );
 			return new User(
+					rs.getInt( "UserId" ),
 					rs.getString( "Name" ),
 					rs.getString( "Gender" ).charAt(0),
 					cBirthDay,
