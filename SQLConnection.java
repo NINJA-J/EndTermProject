@@ -35,7 +35,7 @@ public class SQLConnection {
 	public static final int REFERRER_EXIST		= 6;
 	public static final int REFERRER_INEXIST	= 7;
 	public static final int DATE_FORMAT_ERROR 	= 8;
-//	public static final int FAILURE 			= 9;
+	public static final int FAILURE 			= 9;
 //	public static final int USER_ERROR 			= 10;
 	public static final int PSWD_ERROR 			= 11;
 	
@@ -477,6 +477,7 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
+					rs.getInt( "SeminarId" ),
 					rs.getString( "Feature" ).charAt(0) ) );
 		}
 		rs.close();
@@ -499,6 +500,7 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
+					rs.getInt( "SeminarId" ),
 					rs.getString( "Feature" ).charAt(0));
 		}
 		return null;
@@ -577,17 +579,86 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
+					rs.getInt( "SeminarId" ),
 					rs.getString( "Feature" ).charAt(0));
 		}
 		rs.close();
 		return null;
 	}
 	
+	//查询admin可操作的所有入会请求
+	public ArrayList<EnrollRequest> getEnrollRequestFor( User admin ) throws SQLException{
+		ArrayList<EnrollRequest> eList = new ArrayList<EnrollRequest>();
+		String fStr = "";
+		switch( admin.getFeature() ){
+		case User.FEATURE_INDUSTRY_MANAGER:  fStr = "IndustryId <> -1";  break;
+		case User.FEATURE_COMMITTEE_MANAGER: fStr = "CommitteeId <> -1"; break;
+		case User.FEATURE_SEMINAR_MANAGER:	 fStr = "SeminarId <> -1";   break;
+		default: return eList;
+		}
+		rs = st.executeQuery( "select * from EnrollRequest where " + fStr );
+		while( rs.next() ){
+			eList.add( new EnrollRequest( 
+					new User( con2.chkUserById( rs.getInt( "UserId" ) ) ),
+					rs.getInt( "IndustryId" ),
+					rs.getInt( "CommitteeId" ),
+					rs.getInt( "SeminarId" ) ) );
+		}
+		return eList;
+	}
+	
+	//由admin批准req请求发起者入会
+	public int permitEnrollRequest( User admin, EnrollRequest req ) throws SQLException{
+		String fStr, operStr;
+		switch( admin.getFeature() ){
+		case User.FEATURE_INDUSTRY_MANAGER:  fStr = "IndustryId";  break;
+		case User.FEATURE_COMMITTEE_MANAGER: fStr = "CommitteeId"; break;
+		case User.FEATURE_SEMINAR_MANAGER:	 fStr = "SeminarId";   break;
+		default: return SQLConnection.FAILURE;
+		}
+		rs = st.executeQuery( "select * from EnrollRequest where UserId=" + req.getId() + " and " + fStr + " <> -1" );
+		if( !rs.next() )
+			return SQLConnection.FAILURE;
+		
+		pst = con.prepareStatement( "update UserInfo set " + fStr + "=? , Feature=? where UserId=?" );
+		pst.setInt( 1, req.getProperReqId( admin ) );
+		pst.setString( 2, String.valueOf( admin.getFeature() ) );
+		pst.setInt( 3, req.getUser().getId() );
+		pst.executeUpdate();
+		
+		pst = con.prepareStatement( "delete from EnrollRequest where UserId=?" );
+		pst.setInt( 1, req.getUser().getId() );
+		pst.executeUpdate();
+		
+		return SQLConnection.SUCCESS;
+	}
+	
+	//由admin拒绝req请求发起者入会
+	public int rejectEnrollRequest( User admin, EnrollRequest req ) throws SQLException{
+		String fStr;
+		switch( admin.getFeature() ){
+		case User.FEATURE_INDUSTRY_MANAGER:  fStr = "IndustryId";  break;
+		case User.FEATURE_COMMITTEE_MANAGER: fStr = "CommitteeId"; break;
+		case User.FEATURE_SEMINAR_MANAGER:	 fStr = "SeminarId";   break;
+		default: return SQLConnection.FAILURE;
+		}
+		
+		rs = st.executeQuery( "select * from EnrollRequest where UserId=" + req.getId() + " and " + fStr + " <> -1" );
+		if( !rs.next() )
+			return SQLConnection.SUCCESS;
+		
+		pst = con.prepareStatement( "delete from EnrollRequest where UserId=?" );
+		pst.setInt( 1, req.getUser().getId() );
+		pst.executeUpdate();
+		
+		return SQLConnection.SUCCESS;
+	}
+	
 	//主函数（用不到）
 	public static void main( String[] args ) throws ClassNotFoundException, SQLException{
 		Scanner sin = new Scanner( System.in );
 		
-		SQLConnection con = new SQLConnection( true );
+		SQLConnection con = new SQLConnection();
 		if( !con.connectToDatabase( 
 				"localhost:3306", 
 				"DocManager", 
@@ -597,37 +668,18 @@ public class SQLConnection {
 			return;
 		}
 		
-//		System.out.print("Username : ");
-//		String user = sin.next();
-//		System.out.print("Password : ");
-//		String pswd = sin.next();
-//		if( con.chkLoginInfo( user, pswd) != 0 ){
-//			System.out.println("Fail To Login");
-//			return;
-//		}
-//		System.out.println( "You Have Successfully Logged In, " + user );
+		User admin = con.chkUserById( 1 );
+		ArrayList<EnrollRequest> eList = con.getEnrollRequestFor( admin );
+		EnrollRequest req   = eList.get( 0 );
 		
-		System.out.println( con.chkUserForAll() );
-		System.out.println("---------------------------------");
+		System.out.println( req );
+		System.out.println( admin );
+		System.out.println( con.getEnrollRequestFor( admin ) );
+		
+		con.permitEnrollRequest( admin, req );
+		
 		System.out.println( con.chkUserById( 0 ) );
-		System.out.println("---------------------------------");
-		System.out.println( con.chkUserByName( "Jonathan" ) );
-		System.out.println("---------------------------------");
-		System.out.println( con.chkUserById( con.chkUserByName( "LuJianXi" ).getReferrer() ) );
 		
-		con.addStandard( 
-				"Jonathan", 
-				( new SQLConnection() ).createCalendarForNow(), 
-				( new SQLConnection() ).createCalendar( 2020, 12, 20), 
-				"Do I Look Like A Title?",
-				"There Is No Content" );
-		con.addStandard( 
-				"Jonathan", 
-				( new SQLConnection() ).createCalendarForNow(), 
-				( new SQLConnection() ).createCalendar( 2047, 8, 22), 
-				"It's an Important Day",
-				"Remind yourself whose birthday it is" );
 		
-		System.out.println( con.getStandardForAll() );
 	}
 }

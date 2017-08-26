@@ -4,12 +4,12 @@ import java.util.Calendar;
 
 public class User {
 	
-	public static char FEATURE_NORMAL = 'N';
-	public static char FEATURE_MEMBER = 'M';
-	public static char FEATURE_INDUSTRY_MANAGER = 'I';
-	public static char FEATURE_COMMITTEE_MANAGER = 'C';
-	public static char FEATURE_FINAL_MANAGER = 'F';
-	public static char FEATURE_BOSS = 'B';
+	public static final char FEATURE_NORMAL 			= 'N';
+	public static final char FEATURE_MEMBER 			= 'M';
+	public static final char FEATURE_INDUSTRY_MANAGER 	= 'I';
+	public static final char FEATURE_COMMITTEE_MANAGER 	= 'C';
+	public static final char FEATURE_SEMINAR_MANAGER 	= 'S';
+	public static final char FEATURE_BOSS 				= 'B';
 	
 	int userId;
 	String name;
@@ -20,9 +20,10 @@ public class User {
 	int referrerId;
 	int industryId;
 	int committeeId;
+	int seminarId;
 	char feature;
 	
-	public User( int uId, String name, char gender, Calendar bDate, String address, String tel, int rId, int iId, int cId, char feature ){
+	public User( int uId, String name, char gender, Calendar bDate, String address, String tel, int rId, int iId, int cId, int sId, char feature ){
 		this.userId = uId;
 		this.name = name;
 		this.gender = gender;
@@ -32,7 +33,21 @@ public class User {
 		this.referrerId = rId;
 		this.industryId = iId;
 		this.committeeId = cId;
+		this.seminarId = sId;
 		this.feature = feature;
+	}
+	
+	public User( User u ){
+		this.userId = u.getId();
+		this.name = u.getName();
+		this.gender = u.getGender();
+		this.birthDate = u.getBirthDate();
+		this.address = u.getAddress();
+		this.tel = u.getTel();
+		this.referrerId = u.getReferrer();
+		this.industryId = u.getIndustry();
+		this.committeeId = u.getCommitteeId();
+		this.feature = u.getFeature();
 	}
 	
 	public int getId(){ return userId; }
@@ -42,6 +57,8 @@ public class User {
 	public boolean isMale(){ return gender == 'M'; }
 	
 	public boolean isFemale(){ return gender == 'F'; }
+	
+	public char getGender(){ return gender; }
 	
 	public Calendar getBirthDate(){ return birthDate; }
 	
@@ -55,6 +72,8 @@ public class User {
 	
 	public int getCommitteeId(){ return committeeId; }
 	
+	public int getSeminarId(){ return seminarId; }
+	
 	//判断身份
 	public boolean isFeatureNormal(){ return feature == User.FEATURE_NORMAL; }
 	
@@ -64,11 +83,11 @@ public class User {
 	
 	public boolean isFeatureCommitteeM(){ return feature == User.FEATURE_COMMITTEE_MANAGER; }
 	
-	public boolean isFeatureFinalM(){ return feature == User.FEATURE_FINAL_MANAGER; }
+	public boolean isFeatureFinalM(){ return feature == User.FEATURE_SEMINAR_MANAGER; }
 	
 	public boolean isFeatureBoss(){ return feature == User.FEATURE_BOSS; }
 	
-	public int getFeature(){ return feature; }
+	public char getFeature(){ return feature; }
 	
 	public String toString( String preBlock ){
 		return  preBlock + name + " : \n"+
