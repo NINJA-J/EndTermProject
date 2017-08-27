@@ -101,9 +101,9 @@ public class SQLConnection {
 		return SQLConnection.USER_INEXIST;
 	}
 	
-	public int getLoginId( String name, String pswd ) throws SQLException{
+	public int getLoginId( String name ) throws SQLException{
 		st = con.createStatement();
-		rs = st.executeQuery( "select UserId from LoginInfo where UName=\"" + name + "\" and Pswd=\"" + pswd + "\"" );
+		rs = st.executeQuery( "select UserId from LoginInfo where UName=\"" + name + "\"" );
 		
 		if( !rs.next() )
 			return -1;
@@ -140,7 +140,7 @@ public class SQLConnection {
 	//创建设立的时间
 	public Calendar createCalendar( int year, int month, int day ){
 		Calendar c = Calendar.getInstance();
-		c.set(year, month, day);
+		c.set( year, month - 1, day, 0, 0, 0 ); 
 		return c;
 	}
 	
@@ -177,9 +177,32 @@ public class SQLConnection {
 		return pList;
 	}
 	
+	public ArrayList<Proposal> getProposalByUId( int uId ) throws SQLException{
+		ArrayList<Proposal> pList = new ArrayList<Proposal>();
+		st = con.createStatement();
+		rs = st.executeQuery( "select * from UserInfo where UserId=\"" + uId + "\"" );
+		
+		if( rs.next() ){
+			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " isPro=\'T\'" );
+			while( rs.next() ){
+				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
+				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
+				pList.add( new Proposal(
+						chkUserById( rs.getInt( "WriterId" ) ),
+						rs.getString( "Title" ),
+						rs.getString( "Content" ),
+						upload,
+						deadline,
+						rs.getInt( "Agree" ), 
+						rs.getInt( "Disagree" ) ) );
+			}
+		}
+		
+		return pList;
+	}
 	//查询Id为pId的提案
 	public Proposal getProposalById( int pId ) throws SQLException{
-		rs = st.executeQuery( "select * from Proposal where FileId=" + pId + " isPro=\'T\'" );
+		rs = st.executeQuery( "select * from Proposal where FileId=" + pId + " and isPro=\'T\'" );
 		
 		if( rs.next() ){
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
@@ -200,7 +223,7 @@ public class SQLConnection {
 	//查询标题为title的提案
 	public ArrayList<Proposal> getProposalByTitle( String title ) throws SQLException{
 		ArrayList<Proposal> pList = new ArrayList<Proposal>();
-		rs = st.executeQuery( "select * from Proposal where Title=" + title + " isPro=\'T\'" );
+		rs = st.executeQuery( "select * from Proposal where Title=" + title + " and isPro=\'T\'" );
 		
 		while( rs.next() ){
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
@@ -486,7 +509,7 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
-					rs.getInt( "SeminarId" ),
+					-1,
 					rs.getString( "Feature" ).charAt(0) ) );
 		}
 		rs.close();
@@ -509,7 +532,7 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
-					rs.getInt( "SeminarId" ),
+					-1,
 					rs.getString( "Feature" ).charAt(0));
 		}
 		return null;
@@ -566,6 +589,20 @@ public class SQLConnection {
 		return SQLConnection.SUCCESS;
 	}
 	
+	public int getProporsalAmountByUId( int uId ) throws SQLException{
+		rs = st.executeQuery( "select count(*) as totalItem from Proposal where WriterId=" + uId + " and isPro=\'T\'" );
+		rs.next();
+		
+		return rs.getInt( 1 );
+	}
+	
+	public int getStandardAmountByUId( int uId ) throws SQLException{
+		rs = st.executeQuery( "select count(*) as totalItem from Proposal where WriterId=" + uId + " and isPro=\'F\'" );
+		rs.next();
+		
+		return rs.getInt( 1 );
+	}
+	
 	//查询ID为uId的用户的个人信息
 	public User chkUserById( int uId ) throws SQLException{
 		rs = st.executeQuery( "select * from UserInfo where UserId=" + uId );
@@ -582,7 +619,7 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
-					rs.getInt( "SeminarId" ),
+					-1,
 					rs.getString( "Feature" ).charAt(0));
 		}
 		rs.close();
@@ -605,7 +642,7 @@ public class SQLConnection {
 					new User( con2.chkUserById( rs.getInt( "UserId" ) ) ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
-					rs.getInt( "SeminarId" ) ) );
+					-1 ) );
 		}
 		return eList;
 	}
@@ -671,20 +708,9 @@ public class SQLConnection {
 			return;
 		}
 		
-		if( con.chkLoginInfo( "Jonathan", "U9hq5yqh" ) == SQLConnection.SUCCESS ){
-			int id = con.getLoginId( "Jonathan", "U9hq5yqh" );
-			System.out.println( "Jonathan successfully logged in Id = " + id );
-			
-			con.addUser(
-					id, 
-					"YanTianRun", 
-					"M", 
-					"1997/02/07", 
-					"BJUT", 
-					"13522553798", 
-					"", 
-					"2", 
-					"3");
-		}
+		System.out.println( "Proposal for writter No.0 = " + con.getProporsalAmountByUId( 0 ) );
+		System.out.println( "Standard for writter No.0 = " + con.getStandardAmountByUId( 0 ) );
+		System.out.println( "Proposal for writter No.1 = " + con.getProporsalAmountByUId( 1 ) );
+		System.out.println( "Standard for writter No.1 = " + con.getStandardAmountByUId( 1 ) );
 	}
 }
