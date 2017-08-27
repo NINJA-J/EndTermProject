@@ -101,6 +101,15 @@ public class SQLConnection {
 		return SQLConnection.USER_INEXIST;
 	}
 	
+	public int getLoginId( String name, String pswd ) throws SQLException{
+		st = con.createStatement();
+		rs = st.executeQuery( "select UserId from LoginInfo where UName=\"" + name + "\" and Pswd=\"" + pswd + "\"" );
+		
+		if( !rs.next() )
+			return -1;
+		return rs.getInt( "UserId" );
+	}
+	
 	//立即注册用户名密码，返回值：
 	//SQLConnection.USER_EXIST		注册成功
 	//SQLConnection.SUCCESS			用户名已存在
@@ -513,7 +522,7 @@ public class SQLConnection {
 	 * SQLConnection.DB_OPER_FAILURE	数据库操作失败
 	 * SQLConnection.SUCCESS			成功
 	 * */
-	public int addUser( String name, String gender, String bDate, String address, String tel, String referrer, String industry, String committee, char feature ) throws SQLException{
+	public int addUser( int uId, String name, String gender, String bDate, String address, String tel, String referrer, String industry, String committee ) throws SQLException{
 		User user = chkUserByName( name );
 		User refer = null;
 		if( user != null )
@@ -525,18 +534,6 @@ public class SQLConnection {
 				return SQLConnection.REFERRER_INEXIST;
 		}
 		
-		int cnt;
-		
-		try {
-			rs = st.executeQuery( "select count(*) as totalitem from UserInfo" );
-			rs.next();
-			cnt = rs.getInt( 1 ) + 1;
-		} catch (SQLException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-			return SQLConnection.DB_OPER_FAILURE;
-		}
-		
 		Calendar birth = null;
 		try {
 			birth = createCalendarByString(bDate);
@@ -545,20 +542,26 @@ public class SQLConnection {
 		}
 		
 		pst = con.prepareStatement( "insert into UserInfo " + 
-						"( UserId, Name, Gender, Birth, Address, Tel, ReferrerId, CommitteeId, Feature ) " + 
-						"values ( ?,?,?,?,?,?,?,?,?)" );
-		pst.setInt( 1,  cnt );
+						"( UserId, Name, Gender, Birth, Address, Tel, ReferrerId, CommitteeId, IndustryId, Feature ) " + 
+						"values ( ?,?,?,?,?,?,?,?,?,? )" );
+		pst.setInt( 1,  uId );
 		pst.setString( 2, name );
 		pst.setString( 3, gender );
 		pst.setDate( 4, new java.sql.Date( birth.getTime().getTime() ) );
 		pst.setString( 5,  address );
 		pst.setString( 6, tel );
 		pst.setInt( 7, ( refer == null ? -1 : refer.getId() ) );
-		pst.setInt( 8, -1 );
-		pst.setInt( 9, -1 );
-		pst.setString(10, String.valueOf( feature ));
+		pst.setInt( 8, Integer.valueOf( committee ) );
+		pst.setInt( 9, Integer.valueOf( industry ) );
+		pst.setString(10, String.valueOf( User.FEATURE_NORMAL ) );
 		pst.executeUpdate();
 		
+		pst = con.prepareStatement( "insert into EnrollRequest ( UserId, CommitteeId, IndustryId, SeminarId ) values ( ?,?,?,? )" );
+		pst.setInt( 1, uId );
+		pst.setInt( 2, Integer.valueOf(committee));
+		pst.setInt( 3, Integer.valueOf(industry) );
+		pst.setInt( 4, Integer.valueOf( -1 ) );
+		pst.executeUpdate();
 		
 		return SQLConnection.SUCCESS;
 	}
@@ -668,18 +671,20 @@ public class SQLConnection {
 			return;
 		}
 		
-		User admin = con.chkUserById( 1 );
-		ArrayList<EnrollRequest> eList = con.getEnrollRequestFor( admin );
-		EnrollRequest req   = eList.get( 0 );
-		
-		System.out.println( req );
-		System.out.println( admin );
-		System.out.println( con.getEnrollRequestFor( admin ) );
-		
-		con.permitEnrollRequest( admin, req );
-		
-		System.out.println( con.chkUserById( 0 ) );
-		
-		
+		if( con.chkLoginInfo( "Jonathan", "U9hq5yqh" ) == SQLConnection.SUCCESS ){
+			int id = con.getLoginId( "Jonathan", "U9hq5yqh" );
+			System.out.println( "Jonathan successfully logged in Id = " + id );
+			
+			con.addUser(
+					id, 
+					"YanTianRun", 
+					"M", 
+					"1997/02/07", 
+					"BJUT", 
+					"13522553798", 
+					"", 
+					"2", 
+					"3");
+		}
 	}
 }
