@@ -36,7 +36,7 @@ public class SQLConnection {
 	public static final int REFERRER_INEXIST	= 7;
 	public static final int DATE_FORMAT_ERROR 	= 8;
 	public static final int FAILURE 			= 9;
-//	public static final int USER_ERROR 			= 10;
+	public static final int REFER_RECORD_EXIST 	= 10;
 	public static final int PSWD_ERROR 			= 11;
 	
 	SQLConnection con2 = null;
@@ -283,7 +283,7 @@ public class SQLConnection {
 		int cnt = rs.getInt(1);
 		pst = con.prepareStatement( "insert into Proposal " + 
 				"( FileId, Title, WriterId, UploadDate, Deadline, Content, Status, Agree, Disagree, isPro ) "+
-				"value ( ?,?,?,?,?,?,?,?,?,? )" );
+				"values ( ?,?,?,?,?,?,?,?,?,? )" );
 		pst.setInt( 1, cnt + 1 );
 		pst.setString( 2, title );
 		pst.setInt( 3, uId );
@@ -424,7 +424,7 @@ public class SQLConnection {
 		int cnt = rs.getInt(1);
 		pst = con.prepareStatement( "insert into Proposal " + 
 				"( FileId, Title, WriterId, UploadDate, Deadline, Content, Status, Agree, Disagree, isPro ) "+
-				"value ( ?,?,?,?,?,?,?,?,?,? )" );
+				"values ( ?,?,?,?,?,?,?,?,?,? )" );
 		pst.setInt( 1, cnt + 1 );
 		pst.setString( 2, title );
 		pst.setInt( 3, uId );
@@ -509,7 +509,6 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
-					-1,
 					rs.getString( "Feature" ).charAt(0) ) );
 		}
 		rs.close();
@@ -532,7 +531,6 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
-					-1,
 					rs.getString( "Feature" ).charAt(0));
 		}
 		return null;
@@ -619,7 +617,6 @@ public class SQLConnection {
 					rs.getInt( "ReferrerId" ),
 					rs.getInt( "IndustryId" ),
 					rs.getInt( "CommitteeId" ),
-					-1,
 					rs.getString( "Feature" ).charAt(0));
 		}
 		rs.close();
@@ -689,6 +686,39 @@ public class SQLConnection {
 		
 		pst = con.prepareStatement( "delete from EnrollRequest where UserId=?" );
 		pst.setInt( 1, req.getUser().getId() );
+		pst.executeUpdate();
+		
+		return SQLConnection.SUCCESS;
+	}
+	
+	/* 添加一个用户的个人信息，返回值
+	 * SQLConnection.USER_EXIST			同名（实名）用户已存在
+	 * SQLConnection.REFERRER_NO_FOUND	推荐人不存在
+	 * SQLConnection.DB_OPER_FAILURE	日期格式错误
+	 * SQLConnection.DB_OPER_FAILURE	数据库操作失败
+	 * SQLConnection.SUCCESS			成功
+	 * */
+	public int addReferInfo( String userName, int adminName, String profession, String office, String duty, String reason ) throws SQLException{
+		User user = chkUserByName( userName );
+		User admin = chkUserById( adminName );
+		
+		if( user == null )
+			return SQLConnection.USER_INEXIST;
+		
+		if( admin == null )
+			return SQLConnection.REFERRER_INEXIST;
+		
+		rs = st.executeQuery( "select * from ReferrerList where UserId=" + user.getId() + " and ReferrerId=" + admin.getId() );
+		if( rs.next() )
+			return SQLConnection.REFER_RECORD_EXIST;
+		
+		pst = con.prepareStatement( "insert into ReferrerList ( UserId, ReferrerId, Profession, Office, Duty, Reason ) values ( ?,?,?,?,?,? )" );
+		pst.setInt( 1, user.getId() );
+		pst.setInt( 2, admin.getId() );
+		pst.setString( 3, profession );
+		pst.setString( 4, office );
+		pst.setString( 5, duty );
+		pst.setString( 6,  reason );
 		pst.executeUpdate();
 		
 		return SQLConnection.SUCCESS;

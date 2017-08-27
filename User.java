@@ -20,10 +20,9 @@ public class User {
 	int referrerId;
 	int industryId;
 	int committeeId;
-	int seminarId;
 	char feature;
 	
-	public User( int uId, String name, char gender, Calendar bDate, String address, String tel, int rId, int iId, int cId, int sId, char feature ){
+	public User( int uId, String name, char gender, Calendar bDate, String address, String tel, int rId, int iId, int cId, char feature ){
 		this.userId = uId;
 		this.name = name;
 		this.gender = gender;
@@ -33,7 +32,6 @@ public class User {
 		this.referrerId = rId;
 		this.industryId = iId;
 		this.committeeId = cId;
-		this.seminarId = sId;
 		this.feature = feature;
 	}
 	
@@ -71,8 +69,6 @@ public class User {
 	public int getIndustry(){ return industryId; }
 	
 	public int getCommitteeId(){ return committeeId; }
-	
-	public int getSeminarId(){ return seminarId; }
 	
 	//判断身份
 	public boolean isFeatureNormal(){ return feature == User.FEATURE_NORMAL; }
