@@ -4,8 +4,8 @@ import java.util.Calendar;
 
 public class SysStandard extends FileBasic {
 
-	public SysStandard(String title, String content, Calendar upload, Calendar deadline) {
-		super(title, content, upload, deadline);
+	public SysStandard( int fId, String title, String content, Calendar upload, Calendar deadline) {
+		super( fId, title, content, upload, deadline);
 	}
 	
 	public String toString( String preBlock ){

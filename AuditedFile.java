@@ -13,8 +13,8 @@ public class AuditedFile extends FileBasic {
 	int agree;
 	int disagree;
 	
-	public AuditedFile( User writer, String title, String content, Calendar upload, Calendar deadline, int agree, int disagree ){
-		super( title, content, upload, deadline );
+	public AuditedFile( int fId, User writer, String title, String content, Calendar upload, Calendar deadline, int agree, int disagree ){
+		super( fId, title, content, upload, deadline );
 		this.writer = writer;
 		this.agree = agree;
 		this.disagree = disagree;

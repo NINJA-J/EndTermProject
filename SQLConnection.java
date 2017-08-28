@@ -1,5 +1,6 @@
 package Jonathan;
 
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -12,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import Jonathan.User;
 
@@ -38,6 +41,7 @@ public class SQLConnection {
 	public static final int FAILURE 			= 9;
 	public static final int REFER_RECORD_EXIST 	= 10;
 	public static final int PSWD_ERROR 			= 11;
+	public static final int AUTH_LIMITED		= 12;
 	
 	SQLConnection con2 = null;
 	
@@ -164,13 +168,15 @@ public class SQLConnection {
 				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 				pList.add( new Proposal(
-						chkUserById( rs.getInt( "WriterId" ) ),
+						rs.getInt( "FileId" ),
+						con2.chkUserById( rs.getInt( "WriterId" ) ),
 						rs.getString( "Title" ),
 						rs.getString( "Content" ),
 						upload,
 						deadline,
 						rs.getInt( "Agree" ), 
-						rs.getInt( "Disagree" ) ) );
+						rs.getInt( "Disagree" ),
+						rs.getString( "Status" ).charAt( 0 ) ) );
 			}
 		}
 		
@@ -188,13 +194,15 @@ public class SQLConnection {
 				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 				pList.add( new Proposal(
-						chkUserById( rs.getInt( "WriterId" ) ),
+						rs.getInt( "FileId" ),
+						con2.chkUserById( rs.getInt( "WriterId" ) ),
 						rs.getString( "Title" ),
 						rs.getString( "Content" ),
 						upload,
 						deadline,
 						rs.getInt( "Agree" ), 
-						rs.getInt( "Disagree" ) ) );
+						rs.getInt( "Disagree" ),
+						rs.getString( "Status" ).charAt( 0 ) ) );
 			}
 		}
 		
@@ -208,13 +216,15 @@ public class SQLConnection {
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 			return new Proposal(
+					rs.getInt( "FileId" ),
 					con2.chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
 					upload,
 					deadline,
 					rs.getInt( "Agree" ),
-					rs.getInt( "Disagree" ) );
+					rs.getInt( "Disagree" ),
+					rs.getString( "Status" ).charAt( 0 ) );
 		}
 		
 		return null;
@@ -230,13 +240,15 @@ public class SQLConnection {
 			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 			
 			pList.add( new Proposal(
-					chkUserById( rs.getInt( "WriterId" ) ),
+					rs.getInt( "FileId" ),
+					con2.chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
 					upload,
 					deadline,
 					rs.getInt( "Agree" ),
-					rs.getInt( "Disagree" ) ) );
+					rs.getInt( "Disagree" ),
+					rs.getString( "Status" ).charAt( 0 ) ) );
 		}
 		
 		return pList;
@@ -252,13 +264,15 @@ public class SQLConnection {
 			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 			
 			pList.add( new Proposal(
+					rs.getInt( "FileId" ),
 					con2.chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title"),
 					rs.getString( "Content"),
 					upload,
 					deadline,
-					rs.getInt( "Agree"),
-					rs.getInt( "Disagree") ) );
+					rs.getInt( "Agree" ), 
+					rs.getInt( "Disagree" ),
+					rs.getString( "Status" ).charAt( 0 ) ) );
 		}
 		return pList;
 	}
@@ -336,6 +350,7 @@ public class SQLConnection {
 				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 				
 				pList.add( new Standard(
+						rs.getInt( "FileId" ),
 						con2.chkUserById( rs.getInt( "WriterId" ) ),
 						rs.getString( "Title" ),
 						rs.getString( "Content" ),
@@ -357,6 +372,7 @@ public class SQLConnection {
 			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 			
 			return new Standard(
+					rs.getInt( "FileId" ),
 					con2.chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
@@ -378,7 +394,8 @@ public class SQLConnection {
 			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 			
 			pList.add( new Standard(
-					chkUserById( rs.getInt( "WriterId" ) ),
+					rs.getInt( "FileId" ),
+					con2.chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
 					upload,
@@ -398,6 +415,7 @@ public class SQLConnection {
 			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 			
 			pList.add( new Standard(
+					rs.getInt( "FileId" ),
 					con2.chkUserById( rs.getInt( "WriterId") ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
@@ -439,6 +457,40 @@ public class SQLConnection {
 		return SQLConnection.SUCCESS;
 	}
 	
+	/* 插入一个系统规范，返回值
+	 * SQLConnection.USER_INEXIST		用户不存在
+	 * SQLConnection.AUTH_LIMITED		权限不足
+	 * SQLConnection.TITLE_EXIST		标题已存在
+	 * SQLConnection.DB_OPER_FAILURE	数据库操作失败
+	 * SQLConnection.SUCCESS			插入成功
+	 * */
+	public int addSystemStandard( int writerId, String title, String content, Calendar deadline ) {
+		try {
+			rs = st.executeQuery( "select * from UserInfo where UserId=" + writerId );
+			if( !rs.next() )
+				return SQLConnection.USER_INEXIST;
+			if( rs.getString( "Feature").charAt( 0 ) != User.FEATURE_BOSS )
+				return SQLConnection.AUTH_LIMITED;
+			
+			rs = st.executeQuery( "select * from SysStantard where title=\"" + title + "\"" );
+			if( rs.next() )
+				return SQLConnection.TITLE_EXIST;
+			
+			pst = con.prepareStatement( "insert into SysStandard ( WriterId, Title, Content, Deadline ) values ( ?,?,?,? )" );
+			pst.setInt( 1, writerId );
+			pst.setString( 2, title );
+			pst.setString( 3, content );
+			pst.setDate( 4, new java.sql.Date( deadline.getTime().getTime() ) );
+			pst.executeUpdate();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return SQLConnection.DB_OPER_FAILURE;
+		}
+		
+		return SQLConnection.SUCCESS;
+	}
+	
 	public void addCommentForStandard( int standardId, String comment, int writerId ) throws SQLException{
 		pst = con.prepareStatement( "insert into Comments ( FileId, WriterId, TimeStamp, Content ) values ( ?,?,?,? )" );
 		pst.setInt( 1, standardId );
@@ -466,7 +518,7 @@ public class SQLConnection {
 	//为ID为proposalId的提案增加ID为standardId的规范
 	public int addStandardToProposal( int standardId, int proposalId ) throws SQLException{
 		rs = st.executeQuery( "select * from StdsForPro where" + 
-				" ProposalId=" + proposalId + " and " +
+				" ProposalId=" + proposalId + " and" +
 				" StandardId=" + standardId );
 		if( rs.next() )
 			return 1;
@@ -577,11 +629,10 @@ public class SQLConnection {
 		pst.setString(10, String.valueOf( User.FEATURE_NORMAL ) );
 		pst.executeUpdate();
 		
-		pst = con.prepareStatement( "insert into EnrollRequest ( UserId, CommitteeId, IndustryId, SeminarId ) values ( ?,?,?,? )" );
+		pst = con.prepareStatement( "insert into EnrollRequest ( UserId, CommitteeId, IndustryId ) values ( ?,?,? )" );
 		pst.setInt( 1, uId );
 		pst.setInt( 2, Integer.valueOf(committee));
 		pst.setInt( 3, Integer.valueOf(industry) );
-		pst.setInt( 4, Integer.valueOf( -1 ) );
 		pst.executeUpdate();
 		
 		return SQLConnection.SUCCESS;
@@ -728,19 +779,22 @@ public class SQLConnection {
 	public static void main( String[] args ) throws ClassNotFoundException, SQLException{
 		Scanner sin = new Scanner( System.in );
 		
-		SQLConnection con = new SQLConnection();
-		if( !con.connectToDatabase( 
-				"localhost:3306", 
-				"DocManager", 
-				"root", 
-				"" ) ){
-			System.out.println("Fail Connecting To Database !!!");
-			return;
-		}
+//		SQLConnection con = new SQLConnection();
+//		if( !con.connectToDatabase( 
+//				"localhost:3306", 
+//				"DocManager", 
+//				"root", 
+//				"" ) ){
+//			System.out.println("Fail Connecting To Database !!!");
+//			return;
+//		}
 		
-		System.out.println( "Proposal for writter No.0 = " + con.getProporsalAmountByUId( 0 ) );
-		System.out.println( "Standard for writter No.0 = " + con.getStandardAmountByUId( 0 ) );
-		System.out.println( "Proposal for writter No.1 = " + con.getProporsalAmountByUId( 1 ) );
-		System.out.println( "Standard for writter No.1 = " + con.getStandardAmountByUId( 1 ) );
+		String s = new String( "我是人".getBytes(), Charset.forName("latin2") );
+//		System.out.println( s );
+		
+//		System.out.println( "Proposal for writter No.0 = " + con.getProporsalAmountByUId( 0 ) );
+//		System.out.println( "Standard for writter No.0 = " + con.getStandardAmountByUId( 0 ) );
+//		System.out.println( "Proposal for writter No.1 = " + con.getProporsalAmountByUId( 1 ) );
+//		System.out.println( "Standard for writter No.1 = " + con.getStandardAmountByUId( 1 ) );
 	}
 }
