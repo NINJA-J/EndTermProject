@@ -159,7 +159,7 @@ public class SQLConnection {
 		
 		if( rs.next() ){
 			int uId = rs.getInt( "UserId" );
-			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " isPro=\'T\'" );
+			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " and isPro=\'T\'" );
 			while( rs.next() ){
 				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
@@ -183,7 +183,7 @@ public class SQLConnection {
 		rs = st.executeQuery( "select * from UserInfo where UserId=\"" + uId + "\"" );
 		
 		if( rs.next() ){
-			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " isPro=\'T\'" );
+			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " and isPro=\'T\'" );
 			while( rs.next() ){
 				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
@@ -208,7 +208,7 @@ public class SQLConnection {
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
 			return new Proposal(
-					chkUserById( rs.getInt( "WriterId" ) ),
+					con2.chkUserById( rs.getInt( "WriterId" ) ),
 					rs.getString( "Title" ),
 					rs.getString( "Content" ),
 					upload,
@@ -330,7 +330,7 @@ public class SQLConnection {
 		
 		if( rs.next() ){
 			int uId = rs.getInt( "UserId" );
-			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " isPro=\'F\'" );
+			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " and isPro=\'F\'" );
 			while( rs.next() ){
 				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
@@ -350,7 +350,7 @@ public class SQLConnection {
 	}
 	
 	public Standard getStandardById( int sId ) throws SQLException{
-		rs = st.executeQuery( "select * from Proposal where FileId=" + sId + " isPro=\'F\'" );
+		rs = st.executeQuery( "select * from Proposal where FileId=" + sId + " and isPro=\'F\'" );
 		
 		if( rs.next() ){
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
@@ -371,7 +371,7 @@ public class SQLConnection {
 	
 	public ArrayList<Standard> getStangardByTitle( String title ) throws SQLException{
 		ArrayList<Standard> pList = new ArrayList<Standard>();
-		rs = st.executeQuery( "select * from Proposal where Title=" + title + " isPro=\'F\'" );
+		rs = st.executeQuery( "select * from Proposal where Title=" + title + " and isPro=\'F\'" );
 		
 		while( rs.next() ){
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
@@ -466,7 +466,7 @@ public class SQLConnection {
 	//为ID为proposalId的提案增加ID为standardId的规范
 	public int addStandardToProposal( int standardId, int proposalId ) throws SQLException{
 		rs = st.executeQuery( "select * from StdsForPro where" + 
-				" ProposalId=" + proposalId + 
+				" ProposalId=" + proposalId + " and " +
 				" StandardId=" + standardId );
 		if( rs.next() )
 			return 1;
