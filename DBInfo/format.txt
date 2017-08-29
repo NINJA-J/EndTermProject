@@ -1,1 +1,119 @@
+注册信息存储表
+CREATE TABLE `LoginInfo` (
+  `UserId` int(1)     unsigned NOT NULL AUTO_INCREMENT,
+  `UName`  varchar(30)         NOT NULL DEFAULT '',
+  `Pswd`   varchar(30)         NOT NULL DEFAULT '',
+  `Email`  varchar(30)                  DEFAULT '',
+  PRIMARY KEY (`UserId`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8;
 
+会员信息存储表
+CREATE TABLE `UserInfo` (
+  `UserId`      int(1)      unsigned NOT NULL,
+  `Name`        varchar(30)          NOT NULL DEFAULT '',
+  `Gender`      varchar(1)           NOT NULL DEFAULT '',
+  `Birth`       date NOT                 NULL,
+  `Address`     tinytext             NOT NULL,
+  `Tel`         varchar(20)          NOT NULL DEFAULT '',
+  `ReferrerId`  int(1)      unsigned          DEFAULT NULL,
+  `IndustryId`  int(1)               NOT NULL DEFAULT '-1',
+  `CommitteeId` int(1)               NOT NULL DEFAULT '-1',
+  `Feature`     char(1)              NOT NULL DEFAULT 'N',
+  PRIMARY KEY (`UserId`),
+  KEY `ReferrerId` (`ReferrerId`),
+  CONSTRAINT `userinfo_ibfk_1` FOREIGN KEY (`UserId`)     REFERENCES `LoginInfo` (`UserId`),
+  CONSTRAINT `userinfo_ibfk_2` FOREIGN KEY (`ReferrerId`) REFERENCES `UserInfo`  (`UserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+会员申请表
+CREATE TABLE `EnrollRequest` (
+  `id`          int(1) unsigned NOT NULL AUTO_INCREMENT,
+  `UserId`      int(1) unsigned NOT NULL,
+  `IndustryId`  int(1)          NOT NULL DEFAULT '-1',
+  `CommitteeId` int(1)          NOT NULL DEFAULT '-1',
+  `TimeStamp`   timestamp       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `LinkUser2User` (`UserId`),
+  CONSTRAINT `LinkUser2User` FOREIGN KEY (`UserId`) REFERENCES `UserInfo` (`UserId`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+
+会员推荐表
+CREATE TABLE `ReferrerList` (
+  `id`         int(1)      unsigned NOT NULL AUTO_INCREMENT,
+  `UserId`     int(1)      unsigned NOT NULL,
+  `ReferrerId` int(1)      unsigned NOT NULL,
+  `Profession` varchar(20)          NOT NULL DEFAULT '',
+  `Office`     varchar(50)          NOT NULL DEFAULT '',
+  `Duty`       varchar(20)          NOT NULL DEFAULT '',
+  `Reason`     text                 NOT NULL,
+  `TimeStamp`  timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `LinkUserToUser` (`UserId`),
+  KEY `LinkReferToUser` (`ReferrerId`),
+  CONSTRAINT `LinkReferToUser` FOREIGN KEY (`ReferrerId`) REFERENCES `UserInfo` (`UserId`),
+  CONSTRAINT `LinkUserToUser` FOREIGN KEY (`UserId`) REFERENCES `UserInfo` (`UserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+提案表
+CREATE TABLE `Proposal` (
+  `FileId`     int(1)      unsigned NOT NULL AUTO_INCREMENT,
+  `WriterId`   int(1)      unsigned NOT NULL,
+  `Title`      varchar(50)          NOT NULL DEFAULT '',
+  `UploadDate` timestamp            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `Deadline`   date                 NOT NULL DEFAULT '2020-12-20',
+  `Content`    text                 NOT NULL,
+  `Agree`      int(1)      unsigned NOT NULL DEFAULT '0',
+  `Disagree`   int(1)      unsigned NOT NULL DEFAULT '0',
+  `Status`     varchar(1)           NOT NULL DEFAULT '0',
+  PRIMARY KEY (`FileId`),
+  KEY `WriterId` (`WriterId`),
+  CONSTRAINT `proposal_ibfk_1` FOREIGN KEY (`WriterId`) REFERENCES `UserInfo` (`UserId`)
+) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8;
+
+规范表
+CREATE TABLE `Standard` (
+  `FileId`     int(1)      unsigned NOT NULL AUTO_INCREMENT,
+  `WriterId`   int(1)      unsigned NOT NULL,
+  `Title`      varchar(50)          NOT NULL DEFAULT '',
+  `UploadDate` timestamp            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `Deadline`   date                 NOT NULL DEFAULT '2020-12-20',
+  `Content`    text                 NOT NULL,
+  `Agree`      int(1)      unsigned NOT NULL DEFAULT '0',
+  `Disagree`   int(1)      unsigned NOT NULL DEFAULT '0',
+  `Status`     int(1)               NOT NULL DEFAULT '0',
+  `ProposalId` int(1)      unsigned          DEFAULT NULL,
+  `isPublic`   varchar(1)           NOT NULL DEFAULT 'N',
+  PRIMARY KEY (`FileId`),
+  KEY `WriterId` (`WriterId`),
+  KEY `ProposalId` (`ProposalId`),
+  CONSTRAINT `standard_ibfk_1` FOREIGN KEY (`WriterId`)   REFERENCES `UserInfo` (`UserId`),
+  CONSTRAINT `standard_ibfk_2` FOREIGN KEY (`ProposalId`) REFERENCES `Proposal` (`FileId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+系统规范表
+CREATE TABLE `SysStandard` (
+  `Fileid`     int(1)      unsigned NOT NULL AUTO_INCREMENT,
+  `WriterId`   int(1)      unsigned NOT NULL,
+  `Title`      varchar(50)          NOT NULL DEFAULT '',
+  `Content`    text                 NOT NULL,
+  `UploadDate` timestamp            NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `Deadline`   date                 NOT NULL DEFAULT '2020-12-20',
+  PRIMARY KEY (`Fileid`),
+  KEY `WriterId` (`WriterId`),
+  CONSTRAINT `sysstandard_ibfk_2` FOREIGN KEY (`WriterId`) REFERENCES `UserInfo` (`UserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+评论表
+CREATE TABLE `Comments` (
+  `ID`        int(1)        unsigned NOT NULL AUTO_INCREMENT,
+  `FileId`    int(1)        unsigned NOT NULL,
+  `WriterId`  int(1)        unsigned NOT NULL,
+  `TimeStamp` timestamp              NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `Content`   text                   NOT NULL,
+  `isAgree`   varchar(1)             NOT NULL DEFAULT 'T',
+  PRIMARY KEY (`ID`),
+  KEY `FileId` (`FileId`),
+  KEY `WriterId` (`WriterId`),
+  CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`FileId`) REFERENCES `Proposal` (`FileId`),
+  CONSTRAINT `comments_ibfk_2` FOREIGN KEY (`WriterId`) REFERENCES `UserInfo` (`UserId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
