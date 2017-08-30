@@ -154,6 +154,10 @@ public class SQLConnection {
 		calendar.setTime( sdf.parse(date) );
 		return calendar;
 	}
+	
+	public String calendarToString( Calendar c ){
+		return ( new java.sql.Date( c.getTime().getTime() ).toString() );
+	}
 	//Proposal Operation
 	//查询所有uName用户填写的提案
 	public ArrayList<Proposal> getProposalByUName( String uName ) throws SQLException{
@@ -270,8 +274,8 @@ public class SQLConnection {
 					rs.getString( "Content"),
 					upload,
 					deadline,
-					rs.getInt( "Agree" ), 
-					rs.getInt( "Disagree" ),
+					-1, 
+					-1,
 					rs.getString( "Status" ).charAt( 0 ) ) );
 		}
 		return pList;
@@ -282,7 +286,7 @@ public class SQLConnection {
 	 * SQLConnection.USER_NO_FOUND	写者不存在
 	 * SQLConnection.SUCCESS		成功
 	 * */
-	public int addProposal( String uName, Calendar date, Calendar endline, String title, String content ) throws SQLException{
+	public int addProposal( String uName, Calendar date, Calendar deadline, String title, String content ) throws SQLException{
 		rs = st.executeQuery( "select * from Proposal where Title=\"" + title + "\" and isPro=\'T\'" );
 		if( rs.next() )
 			return SQLConnection.TITLE_EXIST;
@@ -292,33 +296,23 @@ public class SQLConnection {
 			return SQLConnection.USER_INEXIST;
 		int uId = rs.getInt( "UserId" );
 		
-		rs = st.executeQuery( "select count(*) as totalitem from Proposal" );
-		rs.next();
-		int cnt = rs.getInt(1);
 		pst = con.prepareStatement( "insert into Proposal " + 
-				"( FileId, Title, WriterId, UploadDate, Deadline, Content, Status, Agree, Disagree, isPro ) "+
+				"( Title, WriterId, Deadline, Content ) "+
 				"values ( ?,?,?,?,?,?,?,?,?,? )" );
-		pst.setInt( 1, cnt + 1 );
-		pst.setString( 2, title );
-		pst.setInt( 3, uId );
-		pst.setDate( 4, new java.sql.Date( date.getTime().getTime() ) );
-		pst.setDate( 5, new java.sql.Date( endline.getTime().getTime() ) );
-		pst.setString( 6, content );
-		pst.setString( 7, "W");
-		pst.setInt( 8, 0 );
-		pst.setInt( 9, 0 );
-		pst.setString( 10, "T" );
+		pst.setString( 1, title );
+		pst.setInt( 2, uId );
+		pst.setDate( 3, new java.sql.Date( deadline.getTime().getTime() ) );
+		pst.setString( 4, content );
 		pst.executeUpdate();
 		return SQLConnection.SUCCESS;
 	}
 	
 	//按照ID为提案增加评论
 	public void addCommentForProposal( int proposalId, String comment, int writerId ) throws SQLException{
-		pst = con.prepareStatement( "insert into Comments ( FileId, WriterId, TimeStamp, Content ) values ( ?,?,?,? )" );
+		pst = con.prepareStatement( "insert into Comments ( FileId, WriterId, Content ) values ( ?,?,? )" );
 		pst.setInt( 1, proposalId );
 		pst.setInt( 2, writerId );
-		pst.setDate( 3, new java.sql.Date( Calendar.getInstance().getTime().getTime() ) );
-		pst.setString( 4, comment );
+		pst.setString( 3, comment );
 		pst.executeUpdate();
 	}
 	
@@ -344,7 +338,7 @@ public class SQLConnection {
 		
 		if( rs.next() ){
 			int uId = rs.getInt( "UserId" );
-			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId + " and isPro=\'F\'" );
+			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId );
 			while( rs.next() ){
 				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
@@ -357,7 +351,9 @@ public class SQLConnection {
 						upload,
 						deadline,
 						rs.getInt( "Agree" ),
-						rs.getInt( "Disagree" ) ) );
+						rs.getInt( "Disagree" ),
+						rs.getString("Status").charAt( 0 ),
+						rs.getInt( "ProposalId" ) ) );
 			}
 		}
 	
@@ -379,7 +375,9 @@ public class SQLConnection {
 					upload,
 					deadline,
 					rs.getInt( "Agree" ),
-					rs.getInt( "Disagree" ) );
+					rs.getInt( "Disagree" ),
+					rs.getString( "Status" ).charAt( 0 ),
+					rs.getInt( "ProposalId" ) );
 		}
 		
 		return null;
@@ -401,7 +399,9 @@ public class SQLConnection {
 					upload,
 					deadline,
 					rs.getInt( "Agree" ),
-					rs.getInt( "Disagree" ) ) );
+					rs.getInt( "Disagree" ),
+					rs.getString( "Status" ).charAt( 0 ),
+					rs.getInt( "ProposalId" ) ) );
 		}
 		
 		return pList;
@@ -422,37 +422,30 @@ public class SQLConnection {
 					upload,
 					deadline,
 					rs.getInt( "Agree" ),
-					rs.getInt( "Disagree" ) ) );
+					rs.getInt( "Disagree" ),
+					rs.getString( "Status" ).charAt( 0 ),
+					rs.getInt( "ProposalId" ) ) );
 		}
 		return pList;
 	}
 	
-	public int addStandard( String uName, Calendar date, Calendar endline, String title, String content ) throws SQLException{
-		rs = st.executeQuery( "select * from Proposal where Title=\"" + title + "\" and isPro=\'F\'" );
+	public int addStandard( int uId, Calendar deaddline, String title, String content, boolean isPublic ) throws SQLException{
+		rs = st.executeQuery( "select * from Standard where Title=\"" + title + "\"" );
 		if( rs.next() )
 			return SQLConnection.TITLE_EXIST;
 		
-		rs = st.executeQuery( "select * from UserInfo where Name=\"" + uName + "\"" );
+		rs = st.executeQuery( "select * from UserInfo where UserId=" + uId );
 		if( !rs.next() ) 
 			return SQLConnection.USER_INEXIST;
-		int uId = rs.getInt( "UserId" );
 		
-		rs = st.executeQuery( "select count(*) as totalitem from Proposal" );
-		rs.next();
-		int cnt = rs.getInt(1);
 		pst = con.prepareStatement( "insert into Proposal " + 
-				"( FileId, Title, WriterId, UploadDate, Deadline, Content, Status, Agree, Disagree, isPro ) "+
-				"values ( ?,?,?,?,?,?,?,?,?,? )" );
-		pst.setInt( 1, cnt + 1 );
-		pst.setString( 2, title );
-		pst.setInt( 3, uId );
-		pst.setDate( 4, new java.sql.Date( date.getTime().getTime() ) );
-		pst.setDate( 5, new java.sql.Date( endline.getTime().getTime() ) );
-		pst.setString( 6, content );
-		pst.setString( 7, "W");
-		pst.setInt( 8, 0 );
-		pst.setInt( 9, 0 );
-		pst.setString( 10, "F" );
+				"( Title, WriterId, Deadline, Content, isPublic ) "+
+				"values ( ?,?,?,?,? )" );
+		pst.setString( 1, title );
+		pst.setInt( 2, uId );
+		pst.setDate( 3, new java.sql.Date( deaddline.getTime().getTime() ) );
+		pst.setString( 4, content );
+		pst.setString( 5, ( isPublic ? "T" : "F" ) );
 		pst.executeUpdate();
 		return SQLConnection.SUCCESS;
 	}
@@ -469,6 +462,7 @@ public class SQLConnection {
 			rs = st.executeQuery( "select * from UserInfo where UserId=" + writerId );
 			if( !rs.next() )
 				return SQLConnection.USER_INEXIST;
+			
 			if( rs.getString( "Feature").charAt( 0 ) != User.FEATURE_BOSS )
 				return SQLConnection.AUTH_LIMITED;
 			
@@ -492,11 +486,10 @@ public class SQLConnection {
 	}
 	
 	public void addCommentForStandard( int standardId, String comment, int writerId ) throws SQLException{
-		pst = con.prepareStatement( "insert into Comments ( FileId, WriterId, TimeStamp, Content ) values ( ?,?,?,? )" );
+		pst = con.prepareStatement( "insert into Comments ( FileId, WriterId, Content ) values ( ?,?,? )" );
 		pst.setInt( 1, standardId );
 		pst.setInt( 2, writerId );
-		pst.setDate( 3, new java.sql.Date( createCalendarForNow().getTime().getTime() )  );
-		pst.setString( 4, comment );
+		pst.setString( 3, comment );
 		pst.executeUpdate();
 	}
 	
@@ -595,17 +588,15 @@ public class SQLConnection {
 	 * SQLConnection.DB_OPER_FAILURE	数据库操作失败
 	 * SQLConnection.SUCCESS			成功
 	 * */
-	public int addUser( int uId, String name, String gender, String bDate, String address, String tel, String referrer, String industry, String committee ) throws SQLException{
+	public int addUser( int uId, String name, String gender, String bDate, String address, String tel, int rId, String industry, String committee ) throws SQLException{
 		User user = chkUserByName( name );
-		User refer = null;
+		User refer = chkUserById( uId );
+		
 		if( user != null )
 			return SQLConnection.USER_EXIST;
 		
-		if( referrer != "" ){
-			refer = chkUserByName( referrer );
-			if( refer == null )
-				return SQLConnection.REFERRER_INEXIST;
-		}
+		if( refer == null && uId > 0 )
+			return SQLConnection.REFERRER_INEXIST;
 		
 		Calendar birth = null;
 		try {
@@ -654,6 +645,8 @@ public class SQLConnection {
 	
 	//查询ID为uId的用户的个人信息
 	public User chkUserById( int uId ) throws SQLException{
+		if( uId < 0 )
+			return null;
 		rs = st.executeQuery( "select * from UserInfo where UserId=" + uId );
 		if( rs.next() ){
 			Calendar cBirthDay = Calendar.getInstance();
@@ -779,17 +772,18 @@ public class SQLConnection {
 	public static void main( String[] args ) throws ClassNotFoundException, SQLException{
 		Scanner sin = new Scanner( System.in );
 		
-//		SQLConnection con = new SQLConnection();
-//		if( !con.connectToDatabase( 
-//				"localhost:3306", 
-//				"DocManager", 
-//				"root", 
-//				"" ) ){
-//			System.out.println("Fail Connecting To Database !!!");
-//			return;
-//		}
-		
-		String s = new String( "我是人".getBytes(), Charset.forName("latin2") );
+		SQLConnection con = new SQLConnection();
+		if( !con.connectToDatabase( 
+				"localhost:3306", 
+				"DocManager", 
+				"root", 
+				"" ) ){
+			System.out.println("Fail Connecting To Database !!!");
+			return;
+		}
+		Calendar c = Calendar.getInstance();
+		System.out.println( con.calendarToString( c ) );
+//		String s = new String( "我是人".getBytes(), Charset.forName("latin2") );
 //		System.out.println( s );
 		
 //		System.out.println( "Proposal for writter No.0 = " + con.getProporsalAmountByUId( 0 ) );
