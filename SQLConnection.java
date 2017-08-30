@@ -338,7 +338,7 @@ public class SQLConnection {
 		
 		if( rs.next() ){
 			int uId = rs.getInt( "UserId" );
-			rs = st.executeQuery( "select * from Proposal where WriterId=" + uId );
+			rs = st.executeQuery( "select * from Standard where WriterId=" + uId );
 			while( rs.next() ){
 				Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 				Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
@@ -361,7 +361,7 @@ public class SQLConnection {
 	}
 	
 	public Standard getStandardById( int sId ) throws SQLException{
-		rs = st.executeQuery( "select * from Proposal where FileId=" + sId + " and isPro=\'F\'" );
+		rs = st.executeQuery( "select * from Standard where FileId=" + sId );
 		
 		if( rs.next() ){
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
@@ -385,7 +385,7 @@ public class SQLConnection {
 	
 	public ArrayList<Standard> getStangardByTitle( String title ) throws SQLException{
 		ArrayList<Standard> pList = new ArrayList<Standard>();
-		rs = st.executeQuery( "select * from Proposal where Title=" + title + " and isPro=\'F\'" );
+		rs = st.executeQuery( "select * from Standard where Title=" + title );
 		
 		while( rs.next() ){
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
@@ -409,7 +409,7 @@ public class SQLConnection {
 	
 	public ArrayList<Standard> getStandardForAll() throws SQLException {
 		ArrayList<Standard> pList = new ArrayList<Standard>();
-		rs = st.executeQuery( "select * from Proposal where isPro=\'F\'" );
+		rs = st.executeQuery( "select * from Standard" );
 		while( rs.next() ){
 			Calendar upload = Calendar.getInstance();	upload.setTime( new Date( rs.getDate( "UploadDate" ).getTime() ) );
 			Calendar deadline = Calendar.getInstance(); deadline.setTime( new Date( rs.getDate( "Deadline" ).getTime() ) );
@@ -438,14 +438,13 @@ public class SQLConnection {
 		if( !rs.next() ) 
 			return SQLConnection.USER_INEXIST;
 		
-		pst = con.prepareStatement( "insert into Proposal " + 
-				"( Title, WriterId, Deadline, Content, isPublic ) "+
-				"values ( ?,?,?,?,? )" );
+		pst = con.prepareStatement( "insert into Standard " + 
+				"( Title, WriterId, Deadline, Content ) "+
+				"values ( ?,?,?,? )" );
 		pst.setString( 1, title );
 		pst.setInt( 2, uId );
 		pst.setDate( 3, new java.sql.Date( deaddline.getTime().getTime() ) );
 		pst.setString( 4, content );
-		pst.setString( 5, ( isPublic ? "T" : "F" ) );
 		pst.executeUpdate();
 		return SQLConnection.SUCCESS;
 	}
