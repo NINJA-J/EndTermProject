@@ -18,16 +18,34 @@
  			(String)request.getParameter("u_birth"), 
  			(String)request.getParameter("u_address"), 
  			(String)request.getParameter("u_phone"), 
- 			(String)request.getParameter("u_referee"), 
+ 			Integer.valueOf( request.getParameter("u_referee") ), 
  			(String)request.getParameter("u_branch"), 
  			(String)request.getParameter("u_committee") );
 	
 	session.setAttribute( "error", String.valueOf( error ) );
 	session.setAttribute( "uId", String.valueOf( uId ) );
 	
-	if( error == SQLConnection.SUCCESS ){
+	switch( error ){
+	case SQLConnection.USER_EXIST:
+%><script>
+		alert("该名称已存在，请重新填写");
+</script><%
+		response.sendRedirect( "pro_verify.jsp" );
+		break;
+	case SQLConnection.REFERRER_INEXIST:
+%><script>
+		alert("该推荐人不存在，请重新填写");
+</script><%
+		response.sendRedirect( "pro_verify.jsp" );
+		break;
+	case SQLConnection.DATE_FORMAT_ERROR:
+%><<script type="text/javascript">
+		alert("日期格式错误，请填写为标准格式 ==> ----/--/--")
+</script><%
+		response.sendRedirect( "pro_verify.jsp" );
+		break;
+	case SQLConnection.SUCCESS:
 		response.sendRedirect( "Login.jsp" );
-	} else {
-		response.sendRedirect( "index.jsp" );
+		break;
 	}
 %>
